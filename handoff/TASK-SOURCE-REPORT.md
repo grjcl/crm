@@ -1,6 +1,7 @@
 # TASK-SOURCE-REPORT · 来源字典模块（后端 3 接口 + 前端 SourceSheet）
 
 - 任务：Issue #11（BE-API-050~052、FE-COMP-003）
+- PR：#17 https://github.com/grjcl/crm/pull/17
 - 分支：`agent/lead-source-module-e4e1fe787b08`
 - 基线：`main` @ `25a727f`（鉴权层 PR #9 已合并）
 - 环境：Java 21.0.13.1（Temurin）、Maven Wrapper 3.9.9、Node 24.22.3、PostgreSQL 16.16（`192.168.1.53:5432/crm`）、Redis 7（`192.168.1.53:6379`）
