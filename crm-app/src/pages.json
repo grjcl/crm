@@ -1,0 +1,90 @@
+{
+  "pages": [
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/partners/partners",
+      "style": {
+        "navigationBarTitleText": "合作商"
+      }
+    },
+    {
+      "path": "pages/company/company",
+      "style": {
+        "navigationBarTitleText": "合作商档案"
+      }
+    },
+    {
+      "path": "pages/company/companyNew",
+      "style": {
+        "navigationBarTitleText": "新建合作商"
+      }
+    },
+    {
+      "path": "pages/discover/discover",
+      "style": {
+        "navigationBarTitleText": "发现"
+      }
+    },
+    {
+      "path": "pages/channels/channels",
+      "style": {
+        "navigationBarTitleText": "采集渠道"
+      }
+    },
+    {
+      "path": "pages/deal/deal",
+      "style": {
+        "navigationBarTitleText": "商机详情"
+      }
+    },
+    {
+      "path": "pages/follow/follow",
+      "style": {
+        "navigationBarTitleText": "记跟进"
+      }
+    },
+    {
+      "path": "pages/todo/todo",
+      "style": {
+        "navigationBarTitleText": "待跟进"
+      }
+    },
+    {
+      "path": "pages/mine/mine",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "商旅酒店分销 CRM",
+    "navigationBarBackgroundColor": "#1F3864",
+    "backgroundColor": "#F2F4F8"
+  },
+  "tabBar": {
+    "color": "#6B7280",
+    "selectedColor": "#1F3864",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/partners/partners",
+        "text": "合作商"
+      },
+      {
+        "pagePath": "pages/discover/discover",
+        "text": "发现"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的"
+      }
+    ]
+  }
+}
