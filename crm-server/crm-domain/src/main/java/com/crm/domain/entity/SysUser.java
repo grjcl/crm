@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 系统用户（sys_user）。
@@ -40,15 +40,15 @@ public class SysUser {
     private String passwordHash;
 
     /** 管理员重置密码时间 */
-    private LocalDateTime pwdChangedAt;
+    private OffsetDateTime pwdChangedAt;
 
-    /** 最后登录时间 */
-    private LocalDateTime lastLoginAt;
+    /** 最后登录时间（timestamptz，保留时区偏移） */
+    private OffsetDateTime lastLoginAt;
 
     /** 创建时间 */
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     /** 更新时间 */
-    private LocalDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
 }
