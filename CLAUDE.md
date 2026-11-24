@@ -1,0 +1,94 @@
+# 商旅酒店分销 CRM · 工程约定
+
+## 这是什么
+
+商旅酒店分销内部 CRM（一期）。上游对接酒店集团/TMC/批发商拿房量与协议价，下游卖 TMC 与商旅分销公司。一期把"人与关系"装进手机：合作商档案 + 发现 + 商机 + 跟进 + 下次跟进计划。
+
+**规模**：10 人使用（销售 6–8 / 管理员 1–2）｜**接口 55 个**｜**数据表 16 张**
+
+## 文档地图
+
+| 目录 | 内容 | 优先级 |
+|---|---|---|
+| `docs/PRD_一期_v1.3.md` | **需求基线**。§6.1 合作商字段、§12 数据模型、§13.2 接口清单、§14 权限矩阵 | 最高 |
+| `docs/CRM技术选型方案.md` | 技术栈与版本锁定（§7） | 高 |
+| `docs/crm-phase1-prototype.html` | **UI 唯一基线**（V1.14，9 屏 14 深链） | 高 |
+| `spec/` | 已完成的拆解：179 任务 / 267 条 AC / 23 决策 | 执行时主用 |
+
+### spec 目录怎么用
+
+- `01-数据模型.md` — 16 张表的完整 DDL 与字段说明
+- `02-接口任务.md` — 55 个接口的任务定义
+- `05-开发任务清单.csv` — **任务主表**（179 行，按 slice 分）。**以 CSV 为准**，MD 版统计表有旧数据
+- `05-附录-验收标准全表.md` — 267 条 AC，每条标注校验方式
+- `09-决策回执给分析师.md` — **23 个决策的最终结论**，有疑问先看它
+
+## 硬约束
+
+### 1. 契约优先
+
+`shared/contracts/openapi.yaml` 与 `shared/db/V1__init.sql` 是唯一事实来源。改实现前先改契约。
+
+### 2. 表名不能错
+
+```
+✅ follow_plan    ❌ plan
+✅ sys_user       ❌ user
+❌ 不建 role 表    → 角色是 sys_user.role 字段（SALES/ADMIN）
+```
+
+### 3. 不发明
+
+- **不发明字段**：PRD 没写的不加
+- **不发明 UI**：`docs/crm-phase1-prototype.html` 是唯一基线，原型没有的界面不要自己设计
+- **不做范围外**：`spec/00-拆解总览与追溯矩阵.md` §4 有明确不做清单
+
+### 4. 版本锁定
+
+严格按 `docs/CRM技术选型方案.md` §7，不得擅自升级：
+
+```
+Java 21 / Spring Boot 3.3.x / MyBatis-Plus 3.5.x / Flyway 10.x
+Vue 3.5 / TypeScript 5.x / uni-app 3.x / Pinia 2.x
+PostgreSQL 16 / Redis 7
+```
+
+### 5. 接口约定
+
+```
+前缀  /api/v1
+鉴权  Authorization: Bearer {accessToken}
+响应  { "code": 0, "message": "ok", "data": ... }
+分页  ?page=1&size=20 → { list, total, page, size }
+时间  YYYY-MM-DD / YYYY-MM-DDTHH:mm:ss+08:00
+幂等  POST 写操作带 Idempotency-Key
+```
+
+### 6. 施工顺序
+
+按 `spec/05-开发任务清单.csv` 的 `deps` 字段走依赖。S0 是门禁：必须打通「登录 → 列表 → 详情 → 记跟进」全链路，才允许前后端并行。
+
+## 环境说明
+
+**当前执行容器内**：
+
+```
+node 24.22.3  ✓
+npm  11.19.1  ✓
+git            ✓
+java           ✗  ← 后端任务无法自验编译
+mvn            ✗
+```
+
+因此：
+- **前端任务**可以完整自验（`npm run build`）
+- **后端任务**只能写代码，编译需在装了 JDK+Maven 的环境验证
+- **纯 SQL 任务**（数据层 21 个）可只产出 `.sql` 文件，SQL 正确性需人工或 psql 验证
+
+## 提交规范
+
+```
+feat|fix|refactor(scope): 描述
+```
+
+分支：`main`（生产）/ `develop`（联调）/ `feature/xxx`

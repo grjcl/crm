@@ -1,0 +1,180 @@
+﻿id,slice,side,module,title,source,deps,acceptance_count,priority,notes
+DB-MIG-001,S0,数据,迁移,建立 Flyway 基线与 set_updated_at() 触发器函数,技术方案 §2（Flyway 10）/ PRD §12 引言,无,1,P0,V1__init.sql 的第一个语句；所有表复用同一函数
+DB-TBL-01,S0,数据,表,建表 sys_user（含唯一索引与触发器）,PRD §12.1 / §5.2；01 §2.1,DB-MIG-001,1,P0,一期仅 SALES/ADMIN 两角色，不建 role 表
+DB-TBL-16,S0,数据,表,建表 audit_log（只增不改）,PRD §15 / §12.1；01 §2.16,DB-MIG-001,1,P0,不建 updated_at，不建 FK
+DB-VIEW-001,S0,数据,视图,创建 v_partner_list 排序视图,PRD §12.3；01 §4,"DB-TBL-02,DB-TBL-13",1,P0,视图只做 org + follow_plan 左连接，标签分页后批量查
+DB-SEED-002,S0,数据,种子,编写首个 ADMIN 初始化脚本与 local/test 演示用户,PRD §18-6 / §5.2；01 §5,DB-TBL-01,2,P0,脚本管理，不做界面（PRD §19.1 未列用户管理）
+BE-SEC-001,S0,后端,鉴权,实现 JWT 签发与校验（access 2h / refresh 30d）,PRD §5.3；技术方案 §2（jjwt 0.12）,DB-TBL-01,2,P0,HS256，密钥来自环境变量
+BE-SEC-002,S0,后端,鉴权,实现角色注解与统一无权限响应,PRD §14 / §4.3-7,BE-SEC-001,2,P0,@RequireRole 作用于 controller 方法
+BE-SEC-003,S0,后端,鉴权,实现登出黑名单与停用即时失效,PRD §5.2 / §5.3,BE-SEC-001,3,P0,Redis 双 key：jwt:black:{jti}、user:disabled:{id}
+BE-SEC-004,S0,后端,鉴权,实现登录失败计数与 15 分钟锁定,PRD §5.1-4,BE-SEC-001,1,P0,Redis login:fail:{phone}，TTL 15min
+BE-SEC-005,S0,后端,基础设施,实现统一异常处理与错误码枚举,PRD §13.4,BE-INFRA-001,1,P0,11 个错误码集中为枚举类
+BE-SEC-006,S0,后端,基础设施,实现 Idempotency-Key 拦截器,PRD §13.1；技术方案 §6.2,BE-INFRA-001,2,P0,Redis idem:{key} 存首次响应 24h
+BE-SEC-007,S0,后端,审计,实现审计 AOP 切面写入 audit_log,PRD §15；04 R-AUDIT-01/02,DB-TBL-16,2,P0,异步写，失败不影响事务
+BE-SEC-008,S0,后端,安全,实现手机号与银行账号脱敏序列化,PRD §15 / §6.1,BE-INFRA-001,2,P0,Jackson 自定义序列化器 + 注解
+BE-SEC-009,S0,后端,安全,实现 BCrypt 存储与密码策略校验,PRD §5.1 / 04 R-AUTH-05,无,2,P0,策略：6–20 位且同时含字母与数字
+BE-INFRA-001,S0,后端,基础设施,实现统一响应体 ApiResponse 与全局序列化配置,PRD §13.1,无,1,P0,时间格式 ISO8601+08:00；null 字段是否省略需统一（建议保留）
+BE-INFRA-002,S0,后端,基础设施,实现分页参数封装与边界校验,PRD §13.1 / §4.3-1,BE-INFRA-001,1,P0,PageQuery 默认 1/20，上限 100
+BE-INFRA-003,S0,后端,基础设施,用 SpringDoc 生成 OpenAPI 并由 CI 校验 54 个端点,PRD §20 / 技术方案 §2,BE-INFRA-001,1,P0,产物 shared/contracts/openapi.yaml
+BE-INFRA-004,S0,两端,基础设施,接入 openapi-typescript 生成前端类型并在 CI 防漂移,技术方案 §1,BE-INFRA-003,1,P0,src/types/api.d.ts 由脚本生成，手改即失败
+BE-API-001,S0,后端,接口,实现 POST /auth/login,PRD §5.1；接口#1；原型 #login,"BE-SEC-001,BE-SEC-004,BE-SEC-009,DB-TBL-01",4,P0,规格见 02 §BE-API-001
+BE-API-002,S0,后端,接口,实现 POST /auth/refresh,PRD §5.3；接口#2,BE-API-001,2,P0,规格见 02 §BE-API-002
+BE-API-003,S0,后端,接口,实现 POST /auth/logout,PRD §5.3；接口#3,BE-SEC-003,1,P0,规格见 02 §BE-API-003
+BE-API-004,S0,后端,接口,实现 GET /me,PRD §11.1；接口#4；原型 #mine,BE-SEC-008,2,P0,avatarUrl 恒为 null
+BE-API-055,S1,后端,接口,实现 GET /users 全员列表,接口#55（A1 决策新增）；PRD §6.1 协作人；06 疑点 1,C-01 落库；BE-SEC-001；DB-TBL-01,4,P0,只读；全量缓存 60s；不含明文手机号与密码字段
+BE-INFRA-005,S0,后端,基础设施,实现登录接口限流（5 次/分钟/IP）,技术方案 §4；PRD §15,"INFRA-002,BE-API-001",1,P0,Nginx limit_req 为主，应用层 Redis 令牌桶兜底
+BE-INFRA-006,S0,后端,基础设施,实现健康检查端点并限制内网访问,技术方案 §4,INFRA-001,1,P0,/actuator/health 不挂在 /api/v1，仅供探针
+FE-SHELL-001,S0,前端,骨架,搭建 uni-app 工程与 10 个页面的 pages.json 注册,技术方案 §6.1；03 §0.1,无,1,P0,Vue3+TS+Vite；wot-design-uni 按需引入
+FE-SHELL-002,S0,前端,骨架,封装请求层（Bearer 注入、错误码映射、Idempotency-Key）,PRD §13.1 / §4.3-7；技术方案 §1,FE-SHELL-001,2,P0,luch-request 封装
+FE-SHELL-003,S0,前端,骨架,实现设计 Token 与主题样式,PRD §4.1,FE-SHELL-001,1,P0,tokens.scss，颜色/圆角/间距/字号/阴影逐项对齐
+FE-SHELL-004,S0,前端,骨架,实现通用组件库（NavBar/TabBar/Card/TagPill/SegControl/BottomSheet/EmptyState/Toast）,PRD §4.2；03 §1,FE-SHELL-003,1,P0,12 个基础组件，供全站复用
+FE-SHELL-005,S0,前端,骨架,实现日期与相对时间工具,PRD §4.3-4；04 R-SORT-07/08,FE-SHELL-001,1,P0,formatMMDD / formatYMD / relativeDay
+FE-SHELL-006,S0,前端,骨架,建立 Pinia store（user/dict/partner）,技术方案 §1；03 §1,FE-SHELL-002,1,P0,dictStore 缓存 /meta/dicts 24h
+FE-PAGE-001,S0,前端,页面,实现登录页与登录流程,PRD §5.1；原型 #login；03 §2,"FE-SHELL-004,FE-SHELL-002",4,P0,含「忘记密码」toast 与底部说明
+BE-ORG-001,S0,后端,领域服务,实现「写系统跟进」通用服务,PRD §7.3 / §10.4；04 R-TL-01,DB-TBL-12,2,P0,被状态变更与商机阶段变更复用
+INFRA-001,S0,运维,部署,编写 Docker Compose（nginx/api/worker/postgres/redis）,技术方案 §4,无,1,P0,4C8G 起；容器 healthcheck 全配
+INFRA-002,S0,运维,部署,配置 Nginx（TLS、gzip、限流、静态资源）,技术方案 §4；PRD §15,INFRA-001,2,P0,登录接口单独 5r/m per IP
+INFRA-003,S0,运维,CI,搭建 CI 四关（编译、静态检查、单测、迁移校验）,技术方案 §4 / §6.3,"INFRA-001,BE-INFRA-003",1,P0,GitLab CI 或 GitHub Actions，二选一
+INFRA-004,S0,运维,CI,在 PG16 空库上验证 V1__init.sql 可执行,PRD §20；技术方案 §0.1,DB-MIG-001,1,P0,含 16 表 / 9 索引 / 1 视图 / 2 扩展
+TEST-UNIT-001,S0,后端,测试,编写鉴权与登录锁定单测,PRD §5.1 / §17,BE-API-001,1,P0,MockMvc + 嵌入式 Redis 或 Testcontainers
+TEST-API-001,S0,后端,测试,校验 openapi.yaml 与 54 个端点一一对应,PRD §13.2 / §20,BE-INFRA-003,1,P0,脚本比对路径+方法集合
+DB-TBL-05,S0,数据,表,建表 org_tag（标签字典）,PRD §12.1 / §6.2；01 §2.5,DB-MIG-001,1,P0,name 唯一；sort 控制展示顺序
+DB-TBL-06,S0,数据,表,建表 org_tag_rel（联合主键）,PRD §12.1；01 §2.6,"DB-TBL-05,DB-TBL-02",1,P0,16 表中唯一无独立 id 的表
+DB-TBL-09,S0,数据,表,建表 lead_source（来源字典）,PRD §12.1 / §9.3；01 §2.9,DB-MIG-001,1,P0,name 唯一
+DB-SEED-001,S0,数据,种子,写入初始标签（分销/供应/其他）与 7 个来源,PRD §6.2 / §9.3；01 §5,"DB-TBL-05,DB-TBL-09",2,P0,ON CONFLICT DO NOTHING
+DB-TBL-02,S0,数据,表,建表 org（合作商主档 23 列，含 collaborator_ids）,PRD §12.1 / §6.1；01 §2.2,DB-TBL-01,1,P0,含 type/product_lines/collaborator_ids/created_by/deleted_at；level/status 用 CHECK
+DB-TBL-03,S0,数据,表,建表 org_invoice,PRD §12.1 / §6.1；清单 2.4,DB-TBL-02,1,P0,org_id 唯一
+DB-TBL-04,S0,数据,表,建表 org_supply（含两条条件必填 CHECK）,PRD §12.1 / §8；清单 4.1–4.5,DB-TBL-02,2,P0,org_id 唯一
+DB-TBL-13,S0,数据,表,建表 follow_plan（unique(org_id) + version）,PRD §12.1 / §10.2；01 §2.13,DB-TBL-02,2,P0,一 org 一条；version 乐观锁
+DB-EXT-001,S0,数据,表,启用 pg_trgm 扩展与名称 GIN 索引,PRD §6.7；06 疑点 10,DB-TBL-02,2,P0,CREATE EXTENSION pg_trgm; CREATE INDEX ... gin_trgm_ops
+DB-TBL-07,S0,数据,表,建表 contact（主联系人唯一）,PRD §12.1 / §6.3；清单 2.6；06 疑点 21,DB-TBL-02,2,P0,一期只读，数据来自初始化脚本
+DB-TBL-15,S0,数据,表,建表 attachment（软删）,PRD §12.1 / §6.4；清单 2.5,DB-TBL-02,1,P0,含 deleted_at
+DB-TBL-12,S0,数据,表,建表 follow（含系统类型与二期预留列）,PRD §12.1 / §10；01 §2.12,"DB-TBL-02,DB-TBL-07",2,P0,voice/photos/lat/lng 建表保留但不入契约
+DB-TBL-08,S0,数据,表,建表 lead（我的发现）,PRD §12.1 / §9.2；01 §2.8,"DB-TBL-09,DB-TBL-01,DB-TBL-02",1,P0,status 四值含已丢弃（本期不用）
+DB-TBL-10,S0,数据,表,建表 lead_pool（fingerprint 唯一）,PRD §12.1 / §9.1-A / §11.3；01 §2.10,"DB-TBL-14,DB-TBL-01",2,P0,含 claimed_by/claimed_at/lead_id
+DB-TBL-11,S0,数据,表,建表 deal（阶段约束与关单约束）,PRD §12.1 / §9.6；01 §2.11,DB-TBL-02,2,P0,ck_deal_result / ck_deal_lost
+DB-TBL-14,S0,数据,表,建表 channel（供池引用与 S6a 使用）,PRD §12.1 / §11.2；01 §2.14,DB-MIG-001,1,P0,删除时 pool.channel_id 置 NULL
+BE-API-019,S1,后端,接口,实现 GET /tags,PRD §6.2 / §11.4；接口#19,DB-TBL-05,2,P0,规格见 02 §BE-API-019
+BE-API-020,S1,后端,接口,实现 POST /tags,PRD §6.2；接口#20；清单 2.2,BE-API-019,2,P0,仅 ADMIN
+BE-API-021,S1,后端,接口,实现 PUT /tags/{id}（改名）,PRD §6.2 / §11.4；接口#21,BE-API-019,2,P0,不写 org_tag_rel
+BE-API-022,S1,后端,接口,实现 DELETE /tags/{id},PRD §6.2 / §11.4；接口#22,BE-API-019,2,P0,被引用 3002；最后一个不可删
+BE-API-041,S1,后端,接口,实现 GET /meta/dicts,PRD §13.2-41；接口#41；清单 3.1–3.4/4.x/5.2,"BE-API-019,BE-API-050",2,P0,常量枚举 + 2 张字典表组装，缓存 10 分钟
+BE-API-042,S1,后端,接口,实现 GET /meta/version,PRD §5.4 / §11.5；接口#42,BE-META-002,2,P0,匿名可调
+BE-API-050,S1,后端,接口,实现 POST /lead-sources,PRD §9.3；接口#50；原型 #sources,DB-TBL-09,1,P0,仅 ADMIN
+BE-API-051,S1,后端,接口,实现 PUT /lead-sources/{id},PRD §9.3；接口#51,BE-API-050,1,P0,已有 lead 不改，靠 source_id 关联
+BE-API-052,S1,后端,接口,实现 DELETE /lead-sources/{id},PRD §9.3；接口#52,BE-API-050,2,P0,引用中 3002；最后一条不可删
+BE-META-002,S1,后端,配置,实现版本配置读取（环境变量 + OSS JSON）,PRD §5.4；06 疑点 14,INFRA-001,1,P1,不新增表；文件 version.json 放 OSS，服务端缓存 5 分钟
+BE-SORT-001,S1,后端,查询,配置中文排序规则 zh-x-ICU 并验证,PRD §7.2；04 R-SORT-03；06 疑点 26,"DB-TBL-02,DB-TBL-13",1,P1,若环境无 ICU，降级为 C 排序并登记
+FE-COMP-002,S1,前端,组件,实现 TagSheet 标签管理弹层,PRD §11.4；原型 tagsSheet；03 §0.3,"FE-SHELL-004,BE-API-019",3,P0,行内改名失焦保存、右侧 ×、底部新增
+FE-COMP-003,S1,前端,组件,实现 SourceSheet 来源字典弹层,PRD §9.3；原型 sourcesSheet,"FE-SHELL-004,BE-API-050",2,P0,与 TagSheet 同一套交互，独立字典
+FE-SHELL-007,S1,前端,骨架,实现键盘避让与表单滚动,PRD §4.3-5；03 FE-G,FE-SHELL-004,1,P0,输入聚焦时页面上滚，按钮不被遮挡
+FE-SHELL-008,S1,前端,骨架,实现返回二次确认与 Android 物理返回,PRD §4.3-6,FE-SHELL-001,1,P0,有未保存内容时确认
+FE-SHELL-009,S1,前端,骨架,实现全局空态/错误态/无权限态组件,PRD §4.2；03 §12,FE-SHELL-004,1,P0,EmptyState / ErrorState / ForbiddenState
+TEST-UNIT-002,S1,后端,测试,编写字典与标签引用校验单测,PRD §11.4 / §6.2,BE-API-022,1,P0,覆盖重名、被引用、最后一个
+BE-API-005,S2,后端,接口,实现 GET /partners（列表+筛选+计划排序）,PRD §7.1–§7.3 / §13.2-5；接口#5,"DB-TBL-02,DB-TBL-13,BE-ORG-002",6,P0,规格见 02 §BE-API-005
+BE-ORG-002,S2,后端,领域服务,实现合作商列表查询（视图 + 批量标签 + lastFollowAt）,PRD §12.3；04 R-SORT-01,"DB-TBL-02,DB-TBL-06,DB-TBL-12",1,P0,避免 N+1：三条批量 SQL（主列表、标签、最近跟进）
+BE-API-006,S2,后端,接口,实现 POST /partners（含子对象与权限覆盖）,PRD §6.1 / §13.2-6；接口#6；原型 #companyNew,"BE-API-010,BE-API-019,DB-TBL-02,DB-TBL-03,DB-TBL-04,DB-TBL-06",8,P0,规格见 02 §BE-API-006
+BE-API-007,S2,后端,接口,实现 GET /partners/{id}（360 聚合）,PRD §6.3 / §7.4；接口#7,"BE-API-005,DB-TBL-03,DB-TBL-04,DB-TBL-07,DB-TBL-11,DB-TBL-12,DB-TBL-13,DB-TBL-15",4,P0,规格见 02 §BE-API-007
+BE-API-008,S2,后端,接口,实现 PUT /partners/{id}（含状态变更写系统跟进）,PRD §6.1/§6.6/§7.3；接口#8,"BE-ORG-001,BE-API-007",3,P0,规格见 02 §BE-API-008
+BE-API-009,S2,后端,接口,实现 DELETE /partners/{id}（软删）,PRD §6.8 / §18-7；接口#9；清单 2.10,BE-API-007,2,P1,仅 ADMIN；回收站无界面
+BE-API-010,S2,后端,接口,实现 POST /partners/check-dup（pg_trgm）,PRD §6.7；接口#10；清单 2.9；06 疑点 10,BE-DEDUP-001,4,P0,本期只提示，不做合并
+BE-DEDUP-001,S2,后端,领域服务,实现名称归一化与指纹/相似度服务,PRD §6.1/§11.3；04 R-DEDUP-01..05；06 疑点 10/11,DB-EXT-001,2,P0,被查重与采集去重复用
+BE-API-015,S2,后端,接口,实现 GET /partners/{id}/plan,PRD §10.2；接口#15；原型 #plan,DB-TBL-13,2,P0,规格见 02 §BE-API-015
+BE-API-016,S2,后端,接口,实现 PUT /partners/{id}/plan（乐观锁 upsert）,PRD §10.2 / §13.4-4001；接口#16,"BE-PLAN-001,BE-API-015",3,P0,规格见 02 §BE-API-016
+BE-PLAN-001,S2,后端,领域服务,实现计划 upsert 与版本递增服务,PRD §10.2；04 R-LOCK-01,DB-TBL-13,2,P0,供 016 与记跟进联动复用
+FE-PAGE-002,S2,前端,页面,实现合作商列表页（卡片四行 + 计划行着色）,PRD §7.1/§7.2；原型 #partners；03 §3,"FE-SHELL-004,BE-API-005,FE-SHELL-005",3,P0,PartnerCard + PlanRow
+FE-PAGE-003,S2,前端,页面,实现搜索展开态与 300ms 防抖,PRD §6.5；原型 #search；03 §3,FE-PAGE-002,2,P0,一期不做高亮
+FE-PAGE-004,S2,前端,页面,实现档案壳（Hero/指标/页签/操作条/状态弹层）,PRD §6.3；原型 #company/c1；03 §4.1,"FE-SHELL-004,BE-API-007,FE-COMP-005",2,P0,页签内容由 FE-PAGE-005…008 填充
+FE-COMP-005,S2,前端,组件,实现 StatusSheet 状态切换弹层,PRD §7.3 / §19.1-4；原型 statusSheet,FE-SHELL-004,2,P0,5 状态单选，任意方向跳转
+FE-PAGE-009,S2,前端,页面,实现新建/编辑合作商表单,PRD §6.1；原型 #companyNew；03 §5,"FE-SHELL-004,FE-COMP-002,BE-API-006,BE-API-008,BE-API-010",5,P0,编辑态复用同一表单（带 id）
+TEST-E2E-002,S2,两端,测试,合作商建档→列表排序→编辑→状态变更全链路,PRD §17「合作商」,"FE-PAGE-009,FE-PAGE-002,BE-API-008",1,P0,覆盖查重、必填、排序三条
+BE-OSS-001,S3,后端,基础设施,实现 OSS STS 签发与对象校验,PRD §6.4；技术方案 §2,INFRA-009,2,P0,STS 有效期 15 分钟，objectKey 服务端生成
+BE-API-040,S3,后端,接口,实现 POST /files/sts,PRD §6.4；接口#40,BE-OSS-001,3,P0,规格见 02 §BE-API-040
+BE-API-044,S3,后端,接口,实现 POST /partners/{id}/attachments（登记）,PRD §6.4 / §13.2-44；接口#44,"BE-API-040,DB-TBL-15",3,P0,客户端直传后登记；不做 OSS 回调（06 疑点 4）
+BE-API-048,S3,后端,接口,实现 GET /partners/{id}/contacts,PRD §13.2-48；接口#48；清单 2.6,DB-TBL-07,2,P0,规格见 02 §BE-API-048
+BE-API-049,S3,后端,接口,实现 DELETE /partners/{id}/attachments/{aid},PRD §6.4 / §13.2-49；接口#49,BE-API-044,3,P0,规格见 02 §BE-API-049
+FE-PAGE-005,S3,前端,页面,实现概览页签（信息 9 行 + 资源方区块 + 附件区 + 最近跟进）,PRD §6.3 / §8；原型 screenCompany；03 §4.2,"FE-PAGE-004,BE-API-007,BE-API-044",4,P0,SupplySection 条件渲染
+FE-PAGE-006,S3,前端,页面,实现联系人页签（只读）,PRD §2.2 / §6.3；原型联系人页签；03 §4.3,"FE-PAGE-004,BE-API-048",3,P0,无增删改入口
+TEST-E2E-003,S3,两端,测试,附件上传→预览→删除→配额释放链路,PRD §17「合作商」附件项,"FE-PAGE-005,BE-API-049",1,P0,含非白名单类型与超 20 的拒绝
+INFRA-009,S3,运维,对象存储,创建 OSS Bucket、CORS 与 STS 角色,PRD §6.4；技术方案 §3,无,2,P0,目录 partner/{id}/attach/
+TEST-E2E-001,S4,两端,测试,打通 S0 门禁链路：登录→列表→详情→记跟进,技术方案 §10 S0 门禁,"BE-API-001,BE-API-005,BE-API-007,BE-API-012,FE-PAGE-002,FE-PAGE-014",1,P0,未通过不得开前后端并行
+BE-API-011,S4,后端,接口,实现 GET /partners/{id}/follows（时间轴）,PRD §10.4；接口#11,DB-TBL-12,3,P0,规格见 02 §BE-API-011
+BE-API-012,S4,后端,接口,实现 POST /follows（写时间轴 + 覆盖计划）,PRD §10.3/§10.5/§10.2-6；接口#12,"BE-FOLLOW-001,BE-PLAN-001",4,P0,规格见 02 §BE-API-012
+BE-FOLLOW-001,S4,后端,领域服务,实现跟进创建与计划联动事务,PRD §10.3 保存行为；04 R-LOCK-02,"DB-TBL-12,DB-TBL-13",2,P0,被 012 复用
+BE-API-013,S4,后端,接口,实现 PUT /follows/{id}（24h 校验）,PRD §10.6；接口#13；原型 #follow-edit,BE-FOLLOW-002,4,P0,规格见 02 §BE-API-013
+BE-FOLLOW-002,S4,后端,领域服务,实现 24 小时编辑权判定,04 R-EDIT-01..06；PRD §10.6,DB-TBL-12,2,P0,供 011（canEdit 下发）与 013 共用
+BE-API-014,S4,后端,接口,实现 DELETE /follows/{id}（软删 + 原因）,PRD §10.6；接口#14,BE-API-011,3,P0,规格见 02 §BE-API-014
+BE-API-017,S4,后端,接口,实现 DELETE /partners/{id}/plan（标记完成）,PRD §10.2-4；接口#17,BE-PLAN-002,3,P0,规格见 02 §BE-API-017
+BE-PLAN-002,S4,后端,领域服务,实现计划完成（删除）与完成审计,PRD §10.2-4；04 R-STAT-04,"DB-TBL-13,DB-TBL-16",2,P0,overdueDays 写入 audit diff，供指标聚合
+BE-API-018,S4,后端,接口,实现 GET /plans/todo（今天/逾期）,PRD §10.7；接口#18；原型 #todo,BE-TODO-001,3,P0,规格见 02 §BE-API-018
+BE-TODO-001,S4,后端,领域服务,实现待跟进查询与主联系人电话装配,PRD §10.7；04 R-SORT-02,"DB-TBL-13,DB-TBL-07",2,P0,一次 join 出计划+组织+主联系人，避免 N+1
+FE-PAGE-007,S4,前端,页面,实现跟进页签（计划卡 + 时间轴 + 操作菜单）,PRD §10.1/§10.4；原型 #company/c1/跟进、#company/o1/跟进；03 §4.4,"FE-PAGE-004,BE-API-011,BE-API-015,FE-COMP-001,FE-COMP-007",5,P0,含无计划拦截态
+FE-PAGE-014,S4,前端,页面,实现记跟进页,PRD §10.3；原型 #follow/c1；03 §8,"FE-SHELL-004,BE-API-012",3,P0,含方式 chips、下次跟进 chips、字数计数
+FE-PAGE-015,S4,前端,页面,实现编辑跟进态,PRD §10.6；原型 #follow-edit；03 §8,"FE-PAGE-014,BE-API-013",3,P0,不可改下次跟进与可见范围
+FE-COMP-001,S4,前端,组件,实现 PlanSheet 计划弹层,PRD §10.2；原型 planSheet；03 §0.3,"FE-SHELL-004,BE-API-016",3,P0,日期 chips（明天/3 天后/下周五/下周一）+ 事项输入
+FE-COMP-007,S4,前端,组件,实现 FollowActionSheet（编辑/删除）,PRD §10.6；原型 followActSheet,"FE-SHELL-004,BE-API-013,BE-API-014",3,P0,按 canEdit/canDelete 置灰
+FE-PAGE-016,S4,前端,页面,实现待跟进页（今天/逾期）,PRD §10.7；原型 #todo；03 §9,"FE-SHELL-004,BE-API-018",4,P0,点整行跳档案跟进页签；拨打不跳页
+TEST-UNIT-003,S4,后端,测试,编写计划并发与 24h 编辑边界单测,PRD §10.8；04 R-LOCK-01/R-EDIT-03,"BE-API-016,BE-API-013",2,P0,两个线程同时 PUT 计划，断言一个 4001
+TEST-E2E-004,S4,两端,测试,记跟进→计划覆盖→标记完成→待跟进列表联动,PRD §17「跟进」,"FE-PAGE-014,FE-PAGE-016,FE-PAGE-002",1,P0,覆盖排序立即变化
+BE-API-023,S5,后端,接口,实现 GET /leads,PRD §9.1-B；接口#23,DB-TBL-08,3,P0,规格见 02 §BE-API-023
+BE-API-024,S5,后端,接口,实现 POST /leads（含同名提示）,PRD §9.2；接口#24；清单 5.1,BE-LEAD-001,3,P0,规格见 02 §BE-API-024
+BE-LEAD-001,S5,后端,领域服务,实现发现登记、同名提示与转合作商事务,PRD §9.2/§9.5；04 R-DEDUP-07,"BE-DEDUP-001,DB-TBL-08",3,P0,被 024/025 复用
+BE-API-025,S5,后端,接口,实现 POST /leads/{id}/convert,PRD §9.5；接口#25；清单 5.4,"BE-LEAD-001,BE-API-006",3,P0,规格见 02 §BE-API-025
+BE-API-026,S5,后端,接口,实现 GET /pool,PRD §9.1-A；接口#26,DB-TBL-10,2,P0,规格见 02 §BE-API-026
+BE-API-027,S5,后端,接口,实现 POST /pool/{id}/claim（并发安全）,PRD §9.1-A/§9.4；接口#27；原型「认领」,BE-LEAD-002,3,P0,规格见 02 §BE-API-027
+BE-LEAD-002,S5,后端,领域服务,实现认领、丢弃与分配池条目的领域逻辑,PRD §9.4；04 R-SM-POOL,"DB-TBL-10,DB-TBL-08",3,P0,053 复用同一逻辑（指定认领人）
+BE-API-028,S5,后端,接口,实现 POST /pool/{id}/discard,PRD §9.1-A；接口#28,BE-LEAD-002,3,P0,规格见 02 §BE-API-028
+BE-API-053,S5,后端,接口,实现 POST /pool/{id}/assign（ADMIN）,PRD §9.4 / §19.1-6；接口#53,BE-LEAD-002,3,P0,不做 UI，管理脚本调用
+BE-API-029,S5,后端,接口,实现 GET /deals（含 orgId/stage/分组计数/停留天数）,PRD §9.6–§9.8；接口#29；06 疑点 2,DB-TBL-11,5,P0,规格见 02 §BE-API-029
+BE-API-030,S5,后端,接口,实现 POST /deals,PRD §9.6；接口#30；清单 5.5,DB-TBL-11,3,P0,规格见 02 §BE-API-030
+BE-API-031,S5,后端,接口,实现 GET /deals/{id},PRD §9.6；接口#31；原型 #deal/d1,BE-API-030,2,P0,规格见 02 §BE-API-031
+BE-API-032,S5,后端,接口,实现 POST /deals/{id}/advance（含 needResult）,PRD §9.6；接口#32；06 疑点 19,BE-DEAL-001,4,P0,规格见 02 §BE-API-032
+BE-API-033,S5,后端,接口,实现 POST /deals/{id}/close（赢单/输单）,PRD §9.6；接口#33；清单 5.7；原型 loseSheet,BE-DEAL-001,3,P0,规格见 02 §BE-API-033
+BE-API-054,S5,后端,接口,实现 POST /deals/{id}/rollback（ADMIN）,PRD §9.6；接口#54；06 疑点 19,BE-DEAL-001,4,P1,规格见 02 §BE-API-054
+BE-DEAL-001,S5,后端,领域服务,实现商机状态机（推进/关单/回退）,PRD §9.6；04 R-SM-DEAL-01..09,"DB-TBL-11,BE-ORG-001",3,P0,三个接口共用，状态迁移表集中一处
+FE-PAGE-008,S5,前端,页面,实现档案商机页签,PRD §9.7；03 §4.5,"FE-PAGE-004,BE-API-029",2,P0,复用 DealCard
+FE-PAGE-010,S5,前端,页面,实现发现页壳 + 待确认视图,PRD §9.1；原型 #discover；03 §6,"FE-SHELL-004,BE-API-026,BE-API-027,BE-API-028",3,P0,三视图角标取 total；含待跟进入口
+FE-PAGE-011,S5,前端,页面,实现我的发现 + 登记弹层 + 转合作商,PRD §9.2/§9.5；原型 #discover 我的发现；03 §6.3,"FE-PAGE-010,FE-COMP-008,BE-API-024,BE-API-025",3,P0,条目点击用 ActionSheet，不新增详情页
+FE-PAGE-012,S5,前端,页面,实现商机视图与停留角标,PRD §9.8；原型 dealCard；03 §6.4,"FE-PAGE-010,BE-API-029",3,P1,只做列表标记，不新增页面；不做图形漏斗
+FE-PAGE-013,S5,前端,页面,实现商机详情（阶段条/推进/关单/回退）,PRD §9.6；原型 #deal/d1；03 §7,"FE-SHELL-004,BE-API-031,BE-API-032,BE-API-033,BE-API-054,FE-COMP-006",5,P0,编辑按钮不显示（无 PUT /deals）
+FE-COMP-006,S5,前端,组件,实现 LoseSheet 关单弹层（赢单/输单+原因）,PRD §9.6；原型 loseSheet,"FE-SHELL-004,BE-API-033",2,P0,5 个输单原因
+FE-COMP-008,S5,前端,组件,实现 LeadFormSheet 登记发现弹层,PRD §9.2；03 §6.3,"FE-SHELL-004,BE-API-024",3,P0,6 个字段，30 秒录完
+TEST-UNIT-004,S5,后端,测试,编写商机状态机与并发认领单测,PRD §9.6/§9.9；04 R-SM-DEAL/R-SM-POOL,"BE-DEAL-001,BE-API-027",2,P0,覆盖 3→4 必须走 close、两人同时认领
+TEST-E2E-005,S5,两端,测试,发现闭环：采集入池→认领→转合作商；商机推进至关单,PRD §17「发现」,"FE-PAGE-010,FE-PAGE-011,FE-PAGE-013",1,P0,含停留天数断言
+BE-API-034,S6a,后端,接口,实现 GET /channels,PRD §11.2；接口#34；原型 #channels,DB-TBL-14,2,P0,规格见 02 §BE-API-034
+BE-API-035,S6a,后端,接口,实现 POST /channels,PRD §11.2；接口#35；清单 7.2,DB-TBL-14,2,P0,仅 ADMIN
+BE-API-036,S6a,后端,接口,实现 PUT /channels/{id}（含启停）,PRD §11.2；接口#36,BE-API-035,2,P0,仅 ADMIN
+BE-API-037,S6a,后端,接口,实现 DELETE /channels/{id},PRD §11.2；接口#37,BE-API-035,1,P0,池内数据保留，channel_id 置 NULL
+BE-API-038,S6a,后端,接口,实现 POST /channels/{id}/run（单渠道）,PRD §11.2；接口#38；06 疑点 16,BE-WORKER-003,2,P0,异步返回 jobId
+BE-API-039,S6a,后端,接口,实现 POST /channels/run-all,PRD §11.2；接口#39；原型「立即采集一次」,BE-API-038,2,P0,遍历启用渠道
+BE-CH-001,S6a,后端,领域服务,实现渠道 CRUD 与启停的领域校验,PRD §11.2；04 R-VAL-24..26,DB-TBL-14,2,P0,被 034–037 复用
+FE-PAGE-017,S6a,前端,页面,实现渠道配置页与 ChannelSheet,PRD §11.2；原型 #channels / #channel-edit；03 §10,"FE-SHELL-004,BE-API-034,FE-COMP-004",4,P0,含「采集中…」按钮态
+FE-COMP-004,S6a,前端,组件,实现 ChannelSheet 渠道编辑弹层,PRD §11.2；原型 channelSheet,"FE-SHELL-004,BE-API-035",3,P0,编辑态含删除
+TEST-E2E-006,S6a,两端,测试,渠道增改删→启停→立即采集去重入池,PRD §17「我的」渠道项,"FE-PAGE-017,BE-API-039",1,P0,关闭渠道应被跳过
+BE-WORKER-003,S6a,后端,采集,实现采集未开通时的降级路径,PRD §18-5；06 疑点 16,BE-API-038,1,P1,开关 COLLECT_ENABLED，关闭时 038/039 返回 1001 并给出文案
+BE-WORKER-001,S6b,后端,采集,实现手动触发单渠道采集任务,PRD §11.2/§11.3；06 疑点 16,"BE-API-038,BE-DEDUP-001",2,P1,Playwright(jsoup) 抓取 + 抽取 + 去重 + 入池；内存队列
+BE-WORKER-002,S6b,后端,采集,实现定时自动采集（每日 08:00 + 频率匹配）,PRD §11.3；技术方案 §2（@Scheduled + ShedLock）,BE-WORKER-001,1,P1,ShedLock 防多实例重复跑
+BE-PUSH-001,S6b,后端,推送,实现计划到期 09:00 推送任务,PRD §10.2-7 / §15；04 R-PUSH-01..05,DB-TBL-13,2,P1,每日 09:00 扫描 plan_date=今天，按设备推送
+BE-TRACK-001,S6b,后端,埋点,实现服务端埋点上报器,PRD §16；04 R-TRACK-01..05；06 疑点 18,无,2,P1,9 个事件中 7 个服务端上报；先落结构化日志，二期接统计平台
+BE-API-043,S7,后端,接口,实现 POST /admin/users/{id}/reset-password,PRD §5.2；接口#43；清单 1.3,"BE-SEC-003,BE-SEC-009",3,P0,规格见 02 §BE-API-043
+BE-API-045,S7,后端,接口,实现 POST /admin/users（开通账号）,PRD §5.2；接口#45；清单 1.3,"BE-SEC-009,DB-TBL-01",2,P0,规格见 02 §BE-API-045
+BE-API-046,S7,后端,接口,实现 PUT /admin/users/{id}/status,PRD §5.2；接口#46,BE-SEC-003,2,P0,规格见 02 §BE-API-046
+BE-API-047,S7,后端,接口,实现 POST /partners/transfer（交接）,PRD §7.5 / §19.1-5；接口#47；清单 3.8,DB-TBL-02,3,P0,不做 UI，管理脚本调用
+FE-PAGE-018,S7,前端,页面,实现「我的」页与静态页（数据与安全/帮助/设置）,PRD §11.1；原型 #mine；03 §11,"FE-SHELL-004,BE-API-004,BE-API-034,FE-COMP-002,FE-COMP-003",3,P0,头像取姓名首字；二维码隐藏；数据与安全降级为静态说明
+FE-COMP-009,S2,前端,组件,实现协作人/归属选择器,PRD §6.1/§6.6；A1 决策已批准 C-09,BE-API-055；FE-PAGE-009,2,P0,数据源 GET /users；协作人仅 ADMIN 可改，SALES 只读展示
+FE-OFF-001,S7,前端,离线,实现最近访问 20 家详情缓存（LRU）,PRD §15；04 R-OFF-01/05,FE-PAGE-004,1,P1,uni.setStorageSync，key partner:{id}
+FE-OFF-002,S7,前端,离线,实现跟进/计划待上传队列与冲突提示,PRD §15；04 R-OFF-02/03,"FE-PAGE-014,FE-COMP-001",2,P1,每条带自己的 Idempotency-Key
+FE-PUSH-001,S7,前端,推送,接入 uni-push 与通知权限申请,PRD §15/§18-2；04 R-PUSH-02,INFRA-010,1,P1,含 5 厂商通道客户端配置
+FE-PUSH-002,S7,前端,推送,实现推送点击跳转档案跟进页,PRD §10.2-7,FE-PUSH-001,1,P1,payload 带 orgId
+FE-UPD-001,S7,前端,更新,实现版本检查与强/弱更新弹窗,PRD §5.4/§11.5；04 R-AUTH-08,BE-API-042,2,P0,强更不可关闭
+FE-SHELL-010,S7,前端,骨架,实现埋点桥（曝光类事件）,PRD §16；04 R-TRACK-05,FE-SHELL-002,1,P1,列表/详情曝光由前端上报，其余由后端
+INFRA-013,S7,运维,数据导入,编写客户存量数据一次性导入脚本（合作商与联系人）,06 疑点 21；PRD §2.2（数据导入不做界面）,"DB-TBL-02,DB-TBL-07,DB-TBL-06",1,P0,Excel→INSERT 的离线脚本，不属产品功能、不建接口
+INFRA-014,S7,运维,文档,编写管理员操作手册（交接/分配/回退/建账号）,PRD §19.1-5/6；06 疑点 23,"BE-API-045,BE-API-046,BE-API-047,BE-API-053,BE-API-054",1,P1,用 curl 示例覆盖 5 个无 UI 的管理动作
+TEST-SEED-001,S7,后端,测试,编写演示数据种子（11 家合作商/18 联系人/4 商机/3 池/4 渠道）,原型 DB 数据；01 §5,"DB-TBL-02,DB-TBL-07,DB-TBL-11,DB-TBL-10,DB-TBL-14",2,P0,仅 test/local 环境；与原型数据一致以便对照验收
+INFRA-005,S7,运维,备份,实现每日 02:00 pg_dump 备份到 OSS 并保留 30 天,PRD §15；技术方案 §3,INFRA-001,1,P0,含月度恢复演练脚本
+INFRA-006,S7,运维,日志,配置结构化日志与 30 天保留,技术方案 §2/§4,INFRA-001,1,P0,Logback JSON，含 traceId
+INFRA-007,S7,运维,监控,配置 Actuator 健康检查与云监控告警,技术方案 §4,INFRA-001,1,P0,CPU/内存/磁盘/5xx 告警到负责人
+INFRA-008,S7,运维,崩溃监控,接入 Bugly（双端）,PRD §15；技术方案 §4,INFRA-011,1,P1,崩溃率 <0.5% 指标
+INFRA-010,S7,运维,推送资质,申请 5 家安卓厂商推送通道与 APNs 证书,PRD §18-2；清单 §三,INFRA-011,1,P1,运维申请，开发提供包名与签名
+INFRA-011,S7,运维,打包,配置双端打包与内测分发通道,技术方案 §1/§9,FE-SHELL-001,1,P0,云打包或离线打包；TestFlight/蒲公英内测
+INFRA-012,S7,运维,资质,准备隐私政策、软著与上架材料,技术方案 §9；清单 §四,无,1,P1,或走企业内部分发规避审核周期

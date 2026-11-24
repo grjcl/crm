@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>商旅酒店分销 CRM · 一期可交互原型</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --navy:#1F3864;--navy2:#2C4C86;--blue:#2F6FD0;
+  --bg:#F2F4F8;--card:#fff;--line:#E8EBF1;
+  --txt:#161A22;--sub:#6B7280;--mute:#9AA3AF;
+  --green:#2E7D4F;--greenbg:#E7F4EC;--amber:#9A6400;--amberbg:#FFF3DC;
+  --red:#C0392B;--redbg:#FCE9E7;
+  --sh:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+}
+html,body{height:100%}
+body{margin:0;color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:radial-gradient(1100px 620px at 18% -8%,#DDE8FA 0%,#EEF2F8 46%,#E6EAF1 100%);
+  -webkit-font-smoothing:antialiased}
+.shell{display:flex;gap:26px;justify-content:center;align-items:flex-start;padding:26px 22px 46px;min-height:100%}
+.rail{width:236px;flex:none;position:sticky;top:26px}
+.rail-right{width:262px}
+.rail-title{font-size:11px;letter-spacing:.14em;color:#8A94A6;font-weight:700;margin:0 0 10px 10px}
+.rail-group{font-size:10.5px;color:#98A2B3;font-weight:700;letter-spacing:.08em;margin:14px 0 4px 10px}
+.rail-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+  text-align:left;border:0;background:transparent;padding:7px 10px;border-radius:9px;
+  font-size:13px;color:#3A4863;cursor:pointer;transition:.14s;font-family:inherit}
+.rail-item:hover{background:rgba(255,255,255,.75)}
+.rail-item.on{background:#fff;color:var(--navy);font-weight:600;box-shadow:var(--sh)}
+.rail-item .rq{font-size:10px;color:var(--mute);font-variant-numeric:tabular-nums;flex:none}
+.rail-item.on .rq{color:var(--blue)}
+.stage{display:flex;flex-direction:column;align-items:center;gap:12px}
+.caption{font-size:11.5px;color:#8A94A6;text-align:center;line-height:1.6}
+/* phone */
+.phone{position:relative;width:390px;height:844px;background:#0B0D12;border-radius:54px;padding:12px;
+  box-shadow:0 40px 70px -26px rgba(15,25,50,.5),inset 0 0 0 1px rgba(255,255,255,.08)}
+.island{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:104px;height:26px;
+  background:#0B0D12;border-radius:15px;z-index:30}
+.app{position:relative;height:100%;border-radius:44px;overflow:hidden;background:var(--bg);
+  display:flex;flex-direction:column}
+.statusbar{height:50px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 24px 6px;font-size:13px;font-weight:600;letter-spacing:.02em;background:transparent;z-index:25}
+.statusbar .ic{display:flex;align-items:center;gap:5px}
+.viewport{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;position:relative}
+.viewport::-webkit-scrollbar{display:none}
+.tabbar{flex:none;height:58px;display:flex;background:#fff;border-top:1px solid #EAEDF3;z-index:10}
+.tabbar button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;font-size:10px;color:#98A2B3;cursor:pointer;font-family:inherit;padding:0}
+.tabbar button.on{color:var(--navy);font-weight:600}
+.tabbar svg{width:21px;height:21px}
+.homebar{flex:none;height:20px;background:#fff;display:flex;justify-content:center;align-items:center}
+.homebar i{width:120px;height:4px;border-radius:3px;background:#D5DAE3}
+/* generic */
+.navbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;gap:6px;height:48px;padding:0 8px 0 4px;
+  background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid #EDEFF4}
+.navbar .nt{font-size:16px;font-weight:700;letter-spacing:.01em}
+.navbar .nr{margin-left:auto;display:flex;gap:4px;padding-right:6px}
+.iconbtn{width:34px;height:34px;border-radius:10px;border:0;background:transparent;display:flex;align-items:center;
+  justify-content:center;color:#3A4863;cursor:pointer}
+.iconbtn:active{background:#EEF1F6}
+.back{width:34px;height:34px;border:0;background:transparent;color:var(--navy);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;border-radius:10px}
+.pad{padding:14px}
+.sec{font-size:11.5px;color:#8A94A6;font-weight:700;letter-spacing:.09em;margin:16px 4px 8px}
+.card{background:var(--card);border-radius:15px;box-shadow:var(--sh)}
+.muted{color:var(--sub)}
+.tiny{font-size:11.5px;color:var(--mute);line-height:1.55}
+.hr{height:1px;background:var(--line);margin:0}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2.5px 8px;border-radius:999px;
+  background:#EEF1F6;color:#55637C;font-weight:600;white-space:nowrap}
+.pill.blue{background:#E9EFFB;color:#2C4C86}
+.pill.green{background:var(--greenbg);color:var(--green)}
+.pill.amber{background:var(--amberbg);color:var(--amber)}
+.pill.red{background:var(--redbg);color:var(--red)}
+.pill.grey{background:#F1F3F7;color:#8A94A6}
+.navbar .searchbox{flex:1;display:flex;align-items:center;gap:7px;background:#EEF1F6;border-radius:10px;
+  padding:6px 10px;margin-left:4px;animation:fadein .16s ease}
+@keyframes fadein{from{opacity:.35;transform:scaleX(.97)}to{opacity:1;transform:none}}
+.navbar .searchbox input{border:0;background:transparent;outline:none;font-size:13.5px;width:100%;
+  font-family:inherit;color:#1F2937}
+.navbar .cancel{border:0;background:transparent;color:#2C4C86;font-size:14px;font-family:inherit;
+  padding:0 6px;cursor:pointer;font-weight:600}
+.sheet{max-height:88%;overflow-y:auto}
+.row .pl{font-size:11.5px;margin-top:6px;display:flex;align-items:center;gap:6px;color:#5A6A85;
+  white-space:nowrap;overflow:hidden}
+.row .pl b{flex:none;font-size:10.5px;padding:1.5px 7px;border-radius:6px;background:#EDF3FF;
+  color:#2C4C86;font-weight:700}
+.row .pl.late b{background:#FCE9E7;color:#C0392B}
+.row .pl.today b{background:#FFF3DC;color:#9A6400}
+.row .pl.none b{background:#F1F3F7;color:#8A94A6}
+.pin{font-size:9.5px;padding:1px 6px;border-radius:5px;background:#1F3864;color:#fff;
+  font-weight:700;margin-left:6px;vertical-align:2px}
+.plancard{background:#fff;border-radius:15px;box-shadow:var(--sh);margin:14px 14px 0;overflow:hidden}
+.plancard .planh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;
+  border-bottom:1px solid #F1F3F7}
+.plancard .planh > div:first-child{flex:1;min-width:0}
+.planrow{display:flex;align-items:flex-start;gap:11px;padding:13px 14px}
+.planrow .dt{flex:none;width:54px;text-align:center;border-radius:11px;background:#EDF3FF;color:#2C4C86;
+  padding:7px 0 6px;font-weight:700;font-size:13px;line-height:1.35}
+.planrow .dt span{display:block;font-size:9.5px;font-weight:600;margin-top:2px;opacity:.85}
+.planrow .dt.late{background:#FCE9E7;color:#C0392B}
+.pdate{flex:none;font-size:11.5px;font-weight:700;color:#2C4C86;background:#EDF3FF;padding:2.5px 7px;
+  border-radius:6px}
+.pdate.late{background:#FCE9E7;color:#C0392B}
+.pdate.today{background:#FFF3DC;color:#9A6400}
+.planrow .dt.today{background:#FFF3DC;color:#9A6400}
+.sheet .chip{padding:5px 10px;font-size:12px}
+.tag{display:inline-block;font-size:10px;padding:1.5px 7px;border-radius:6px;background:#EDF1F9;
+  color:#3A5078;font-weight:600;margin-right:4px}
+/* 我的（微信风） */
+.mine-head{display:flex;align-items:center;gap:14px;padding:26px 18px 22px;background:#fff}
+.mine-head .av{width:62px;height:62px;border-radius:10px;flex:none;display:flex;align-items:center;
+  justify-content:center;font-size:23px;font-weight:700;color:#fff;background:linear-gradient(135deg,#2C4C86,#1F3864)}
+.mine-head .nm{font-size:19px;font-weight:700;letter-spacing:.01em}
+.mine-head .id{font-size:12.5px;color:#8A94A6;margin-top:5px}
+.mine-card{background:#fff;margin:10px 0 0}
+.mine-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #F2F4F8;
+  font-size:15px;color:#1F2937;cursor:pointer}
+.mine-row:last-child{border-bottom:0}
+.mine-row:active{background:#F7F8FA}
+.mine-row .mi{width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center}
+.mine-row .ml{flex:1}
+.mine-row .mv{font-size:13px;color:#9AA3AF;margin-right:2px}
+/* 标签管理 */
+.tagrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F2F4F8}
+.tagrow input{flex:1;min-width:0;border:0;outline:none;font-size:15px;font-family:inherit;color:#1F2937;
+  background:transparent;padding:4px 0}
+.tagrow .del{width:30px;height:30px;border-radius:9px;border:0;background:#F5F6FA;color:#9AA3AF;
+  font-size:17px;line-height:1;cursor:pointer;flex:none}
+.tagrow .del:active{background:#FCE9E7;color:#C0392B}
+/* list */
+.searchwrap{padding:10px 14px 4px;background:#fff}
+.search{display:flex;align-items:center;gap:8px;background:#EEF1F6;border-radius:11px;padding:8px 11px}
+.search input{border:0;background:transparent;outline:none;font-size:13.5px;width:100%;font-family:inherit;color:#1F2937}
+.search svg{width:15px;height:15px;color:#98A2B3;flex:none}
+.chips{display:flex;gap:7px;overflow-x:auto;padding:9px 14px 11px;background:#fff;border-bottom:1px solid #EDEFF4;
+  position:sticky;top:48px;z-index:11;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{padding:5px 12px;border-radius:999px;background:#F3F5F9;border:1px solid transparent;font-size:12.5px;
+  color:#55637C;white-space:nowrap;cursor:pointer;font-family:inherit}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+.list{background:#fff;border-radius:15px;overflow:hidden;box-shadow:var(--sh)}
+.row{display:flex;gap:11px;align-items:flex-start;padding:13px 14px;border-bottom:1px solid #F1F3F7;cursor:pointer}
+.row:last-child{border-bottom:0}
+.row:active{background:#F7F9FC}
+.row .avatar{margin-top:1px}
+.row .main{flex:1;min-width:0}
+.row .t{font-size:14.5px;font-weight:600;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .s{font-size:12px;color:#8A94A6;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .f{font-size:11.5px;color:#8A94A6;margin-top:5px;display:flex;align-items:center;white-space:nowrap;overflow:hidden}
+.row > .pill{flex:none;margin-top:1px}
+.avatar{width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;background:#EDF1F9;color:var(--navy)}
+.avatar.sq{background:#F3EDE4;color:#8A5A20}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:5px;background:#B9C1CF}
+.dot.on{background:#38A169}
+.dot.pause{background:#D69E2E}
+.dot.off{background:#CBD2DE}
+/* company hero */
+.hero{margin:14px 14px 0;border-radius:18px;padding:16px 16px 14px;color:#fff;
+  background:linear-gradient(135deg,#22385F 0%,#1F3864 45%,#2C4C86 100%);box-shadow:0 14px 30px -14px rgba(31,56,100,.65)}
+.hero .hn{font-size:17.5px;font-weight:700;line-height:1.35;letter-spacing:.01em}
+.hero .hm{font-size:12px;opacity:.78;margin-top:5px}
+.hero .tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.hero .tags span{font-size:10.5px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.16)}
+.hero .tags span.solid{background:#fff;color:var(--navy);font-weight:700}
+.metrics{display:flex;background:#fff;margin:-10px 20px 0;border-radius:15px;box-shadow:var(--sh);
+  padding:12px 6px;position:relative;z-index:2}
+.metrics div{flex:1;text-align:center;border-right:1px solid #F0F2F7}
+.metrics div:last-child{border:0}
+.metrics b{display:block;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.metrics i{display:block;font-style:normal;font-size:10.5px;color:#8A94A6;margin-top:2px}
+.segs{display:flex;gap:2px;margin:14px 14px 0;background:#E7EAF1;border-radius:11px;padding:3px}
+.segs button{flex:1;border:0;background:transparent;padding:6px 2px;font-size:12.5px;border-radius:9px;
+  color:#5A6A85;cursor:pointer;font-family:inherit;white-space:nowrap}
+.segs button.on{background:#fff;color:var(--navy);font-weight:700;box-shadow:0 1px 3px rgba(16,24,40,.12)}
+/* info */
+.info{padding:4px 14px}
+.info .ri{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid #F1F3F7;font-size:13px}
+.info .ri:last-child{border-bottom:0}
+.info .ri b{font-weight:500;color:#8A94A6;flex:none}
+.info .ri span{color:#1F2937;text-align:right;line-height:1.45}
+/* timeline */
+.tl{padding:6px 14px 4px}
+.tl .it{position:relative;padding:0 0 18px 22px;border-left:1px solid #E3E8F1;margin-left:5px}
+.tl .it:last-child{border-left-color:transparent;padding-bottom:4px}
+.tl .it::before{content:"";position:absolute;left:-5px;top:2px;width:9px;height:9px;border-radius:50%;
+  background:#fff;border:2px solid var(--blue)}
+.tl .it.f::before{border-color:#C9D1E0}
+.tl .hd{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#8A94A6;margin-bottom:5px}
+.tl .bd{font-size:13px;line-height:1.6;color:#28313F}
+.tl .nx{display:inline-flex;align-items:center;gap:5px;margin-top:7px;font-size:11px;color:#2C6B4F;
+  background:var(--greenbg);padding:3px 8px;border-radius:7px}
+/* action bar */
+.actionbar{position:sticky;bottom:0;display:flex;gap:9px;padding:10px 14px 14px;
+  background:linear-gradient(180deg,rgba(242,244,248,.55) 0%,rgba(242,244,248,.97) 38%,#F2F4F8 62%);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.btn{flex:1;height:45px;border-radius:13px;border:0;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn.primary{background:var(--navy);color:#fff}
+.btn.primary:active{background:#16294A}
+.btn.ghost{background:#fff;color:var(--navy);box-shadow:var(--sh)}
+.btn.small{height:36px;font-size:13px;border-radius:10px;flex:none;padding:0 14px}
+.btn.line{background:#fff;color:#55637C;box-shadow:inset 0 0 0 1px #E1E6EF}
+/* deal */
+.stagebar{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 6px 6px;position:relative}
+.stagebar .sp{flex:1;text-align:center;position:relative;font-size:10.5px;color:#98A2B3}
+.stagebar .sp .n{width:22px;height:22px;border-radius:50%;background:#EDF0F6;color:#98A2B3;margin:0 auto 6px;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;position:relative;z-index:2}
+.stagebar .sp.done .n{background:var(--navy);color:#fff}
+.stagebar .sp.cur .n{background:#fff;color:var(--navy);box-shadow:0 0 0 2px var(--navy) inset}
+.stagebar .sp.cur{color:var(--navy);font-weight:700}
+.stagebar .line{position:absolute;left:12%;right:12%;top:11px;height:2px;background:#E4E9F2;z-index:1}
+.stagebar .line i{display:block;height:100%;background:var(--navy);border-radius:2px}
+/* misc */
+.kv{display:flex;justify-content:space-between;font-size:12.5px;padding:9px 0;border-bottom:1px solid #F3F5F9}
+.kv:last-child{border:0}
+.kv b{color:#8A94A6;font-weight:500}
+.kv span{font-weight:600}
+.seg-line{display:flex;gap:8px;flex-wrap:wrap}
+.empty{text-align:center;color:#9AA3AF;font-size:12.5px;padding:34px 0}
+.banner{margin:12px 14px 0;border-radius:13px;padding:11px 12px;background:#EDF3FF;color:#2C4C86;
+  font-size:12px;line-height:1.55;display:flex;gap:9px;align-items:flex-start}
+.banner .bl{font-weight:700;flex:none;white-space:nowrap}
+.banner > span:last-child{flex:1;min-width:0}
+.banner a{color:var(--blue);text-decoration:none;font-weight:700}
+.fab-line{display:flex;gap:8px;padding:12px 14px 0}
+/* form */
+.form{padding:6px 14px}
+.field{padding:11px 0;border-bottom:1px solid #F1F3F7}
+.field label{display:block;font-size:12px;color:#8A94A6;margin-bottom:6px}
+.field input,.field textarea,.field select{width:100%;border:0;outline:none;font-size:14.5px;font-family:inherit;
+  color:#1F2937;background:transparent;resize:none;line-height:1.55}
+.field .hint{font-size:11px;color:#A6AEBC;margin-top:5px}
+textarea#f-text{display:block;width:100%;min-height:96px;background:#F7F9FC;border:0;border-radius:11px;
+  padding:11px;margin-top:2px;font-family:inherit;font-size:14px;line-height:1.55;color:#1F2937;outline:none;resize:none}
+.voice{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fff;border-radius:14px;
+  box-shadow:var(--sh);margin-top:10px;cursor:pointer;user-select:none}
+.voice .mic{width:38px;height:38px;border-radius:50%;background:#EDF1F9;color:var(--navy);display:flex;
+  align-items:center;justify-content:center;flex:none}
+.voice.on .mic{background:var(--redbg);color:var(--red)}
+.voice .vt{font-size:13.5px;font-weight:600}
+.voice .vs{font-size:11px;color:#A6AEBC;margin-top:2px}
+.photos{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px 0}
+.ph{width:64px;height:64px;border-radius:11px;background:#F4F6FA;display:flex;align-items:center;
+  justify-content:center;color:#A6AEBC;font-size:11px;flex-direction:column;gap:3px}
+.ph.add{border:1px dashed #D3DAE6;cursor:pointer}
+.ph img{display:none}
+/* toast */
+.toast{position:absolute;left:50%;bottom:96px;transform:translate(-50%,14px);opacity:0;pointer-events:none;
+  background:rgba(22,28,40,.92);color:#fff;font-size:12.5px;padding:9px 15px;border-radius:11px;
+  max-width:300px;text-align:center;line-height:1.5;transition:.24s;z-index:60;backdrop-filter:blur(6px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+/* modal */
+.mask{position:absolute;inset:0;background:rgba(16,22,34,.42);z-index:50;display:flex;align-items:flex-end}
+.sheet{width:100%;background:#fff;border-radius:20px 20px 0 0;padding:16px 16px 22px;animation:up .22s ease}
+@keyframes up{from{transform:translateY(20px);opacity:.6}to{transform:none;opacity:1}}
+.sheet h4{margin:0 0 4px;font-size:15.5px}
+.sheet p{margin:0 0 12px;font-size:12px;color:#8A94A6}
+.opt{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.opt button{padding:8px 13px;border-radius:10px;border:1px solid #E4E8F0;background:#fff;font-size:13px;
+  color:#3A4863;font-family:inherit;cursor:pointer}
+.opt button.on{background:#EDF3FF;border-color:#C7D8F7;color:var(--navy);font-weight:700}
+@media (max-width:1180px){.rail-left{display:none}}
+@media (max-width:940px){
+  html,body{overflow:hidden;height:100%}
+  .shell{display:block;padding:0;gap:0;height:100%;overflow:hidden}
+  .rail{display:none}
+  .stage{display:block;width:100%;height:100%}
+  .phone{width:100%;height:100%;border-radius:0;padding:0;box-shadow:none}
+  .island{display:none}
+  .app{border-radius:0;height:100%}
+  .caption{display:none}
+  .statusbar{height:44px;padding:0 20px 6px}
+}
+/* ---- 待跟进列表（新增，PRD 12.9） ---- */
+.tl .hd{justify-content:space-between}
+.itmore{border:0;background:transparent;color:#C2C9D6;font-size:15px;line-height:1;padding:0 2px;letter-spacing:1px}
+.todobar{padding:10px 14px 0;font-size:11.5px;color:#9AA3AF}
+.todosec{margin-top:13px}
+.todosec-h{display:flex;align-items:center;gap:7px;padding:0 14px 7px;font-size:12px;font-weight:600;color:#3A465C}
+.todosec-n{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#E7EAF1;color:#5A6A85;
+  font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+.is-late .todosec-h{color:#C0392B}
+.is-late .todosec-n{background:#FCE9E7;color:#C0392B}
+.todoi{display:flex;align-items:center;gap:10px;margin:0 14px 8px;padding:11px 13px;background:#fff;
+  border-radius:15px;box-shadow:var(--sh)}
+.todoi-main{flex:1;min-width:0}
+.todoi-n{font-size:14px;font-weight:600;color:#161A22;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.todoi-m{font-size:11.5px;color:#2C4C86;margin-top:3px}
+.is-late .todoi-m{color:#C0392B}
+.todoi-t{font-size:11.5px;color:#6B7280;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.todoi-call{flex:none;padding:6px 13px;border-radius:13px;border:1px solid #DDE2E9;background:#fff;
+  color:#1F3864;font-size:12px;font-weight:600}
+.todoempty{margin:0 14px;padding:18px;text-align:center;background:#fff;border-radius:15px;
+  font-size:11.5px;color:#9AA3AF}
+.todolink{display:flex;align-items:center;justify-content:space-between;margin:10px 14px 0;
+  padding:10px 13px;background:var(--planbg,#EDF3FF);border-radius:12px;font-size:12px;color:#2C4C86}
+.todolink b{color:#1F3864}
+.todolink-go{display:flex;align-items:center;gap:4px}
+
+/* ---- 操作菜单（两行式，用于跟进记录） ---- */
+.opt2{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.opt2 button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px 14px;
+  border-radius:12px;border:1px solid #E8EBF1;background:#F7F9FC;font-size:13.5px;color:#161A22;text-align:left}
+.opt2 button span{font-size:11px;color:#9AA3AF}
+.opt2 button.danger{color:#C0392B;background:#FCE9E7;border-color:#F5CFCB}
+
+/* ---- 商机阶段停留角标（PRD 11.9） ---- */
+.staybadge{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:6px;background:#FCE9E7;
+  color:#C0392B;font-size:10px;font-weight:600;vertical-align:2px}
+
+/* ---- 档案页可点的合作状态 ---- */
+.statuslink{color:#2F6FD0;border-bottom:1px dashed rgba(47,111,208,.45);padding-bottom:1px}
+
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail rail-left" id="railLeft"></aside>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="app" id="app">
+        <div class="statusbar">
+          <span>9:41</span>
+          <span class="ic">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.2 5.6 7.7a3.4 3.4 0 0 1 4.8 0L8 10.2Zm-4.1-4.4a7 7 0 0 1 8.2 0l1.3-1.4a9 9 0 0 0-10.8 0l1.3 1.4ZM.6 2.6a11.4 11.4 0 0 1 14.8 0L16.7 1.2a13.4 13.4 0 0 0-17.4 0L.6 2.6Z"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.2" stroke="currentColor" opacity=".38"/><rect x="2" y="2" width="15.5" height="8" rx="2" fill="currentColor"/><path d="M22.2 4v4c1-.3 1.6-1 1.6-2s-.6-1.7-1.6-2Z" fill="currentColor" opacity=".38"/></svg>
+          </span>
+        </div>
+        <div class="viewport" id="view"></div>
+        <nav class="tabbar" id="tabbar"></nav>
+        <div class="homebar"><i></i></div>
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+    <div class="caption">iPhone 390 × 844 ｜ 点左侧页面可跳转，卡片/按钮可点 ｜ 数据为示意</div>
+  </div>
+
+  <aside class="rail rail-right" id="railRight"></aside>
+</div>
+
+<script>
+/* ============================================================ 数据 */
+const DB = {
+  me:{name:'王磊', role:'销售', dept:'商旅分销部', phone:'138****6621'},
+  tags:['分销','供应','其他'],
+  /* 来源字典（PRD 11.2）：与标签管理同一套交互，独立字典 */
+  sources:['转介绍','展会','同行','官网','陌拜','公众号','招标'],
+  companies:[
+    {id:'c1',name:'中航商旅服务有限公司',short:'中航商旅',level:'战略',status:'合作中',city:'上海',
+     owner:'王磊',industry:'TMC / 商旅服务',credit:'91310115MA1K3X2N2A',addr:'上海市浦东新区世纪大道 1200 号',
+     web:'zhonghang-travel.com',tags:['分销'],
+     contacts:[
+       {n:'陈明',t:'采购总监',p:'138****2201',k:'决策人'},
+       {n:'刘薇',t:'预订操作主管',p:'139****3312',k:'对接人'},
+       {n:'赵会计',t:'财务结算',p:'137****8890',k:'财务'}],
+     deals:['d1'],
+     attach:['营业执照.jpg','2026 年度合作协议.pdf'],
+     brief:'华东区域头部 TMC，主做央企与外资企业差旅，2026 年月均间夜 1,200+，华南区为空白市场。'},
+    {id:'c2',name:'环球商旅（深圳）有限公司',short:'环球商旅',level:'重点',status:'合作中',city:'深圳',
+     owner:'李静',industry:'商旅分销',credit:'91440300MA5F8Q1L7C',addr:'深圳市福田区福华三路 88 号',
+     web:'globalbiz.cn',tags:['分销'],
+     contacts:[{n:'吴桐',t:'运营总监',p:'136****5567',k:'决策人'},{n:'孙倩',t:'预订主管',p:'135****2231',k:'对接人'}],
+     deals:['d2'],
+     attach:['合作协议 2026.pdf'],
+     brief:'华南区域分销商，擅长中小企业客户，正在拓展酒店直连资源。'},
+    {id:'c3',name:'途美商旅科技（杭州）有限公司',short:'途美商旅',level:'普通',status:'试单',city:'杭州',
+     owner:'王磊',industry:'TMC',credit:'91330106MA2GXK9E3D',addr:'杭州市西湖区文三路 200 号',
+     web:'tumei-trip.com',tags:['分销'],
+     contacts:[{n:'林逸',t:'创始人',p:'138****7781',k:'决策人'}],
+     deals:['d3'],
+     attach:[],
+     brief:'新锐 TMC，2026 年 9 月开始试单，量小但增长快，结算准时。'},
+    {id:'c4',name:'华程国际旅行社有限公司',short:'华程国旅',level:'重点',status:'暂停',city:'北京',
+     owner:'张倩',industry:'旅行社',credit:'91110105MA01T7YP4H',addr:'北京市朝阳区建国路 90 号',
+     web:'huacheng-tour.com',tags:['分销'],
+     contacts:[{n:'马涛',t:'差旅事业部总经理',p:'139****1102',k:'决策人'}],
+     deals:['d4'],
+     attach:['2025 协议（已到期）.pdf'],
+     brief:'2025 年合作过 Q1，因返佣比例未谈拢暂停，2026 年 11 月重新接触。'},
+    {id:'c5',name:'星旅同行（成都）科技有限公司',short:'星旅同行',level:'普通',status:'潜在',city:'成都',
+     owner:'李静',industry:'商旅分销',credit:'91510100MA6C1W2X9K',addr:'成都市高新区天府三街 199 号',
+     web:'xinglv.cn',tags:['分销'],
+     contacts:[{n:'何静',t:'商务负责人',p:'135****4478',k:'潜在决策人'}],
+     deals:[],
+     attach:[],
+     brief:'西南区域新客户，通过行业公众号了解到的发现线索，尚未正式合作。'},
+    {id:'s1',name:'华住酒店集团',short:'华住',level:'战略',status:'合作中',city:'全国',
+     owner:'王磊',industry:'酒店集团',credit:'91310000MA1FL0Q28X',addr:'上海市长宁区金钟路 968 号',
+     web:'huazhu.com',tags:['供应'],
+     contacts:[{n:'徐蕾',t:'渠道合作总监',p:'137****6612',k:'决策人'},{n:'周强',t:'预订对接',p:'136****9903',k:'对接人'}],
+     deals:[],
+     attach:['2026 集团协议价表.xlsx','分销合作协议.pdf'],
+     brief:'全国 320 城 8,600 家门店，协议价 + 团体房两条产品线，旺季房量保障是续签关键。'},
+    {id:'s2',name:'锦江国际集团',short:'锦江',level:'重点',status:'合作中',city:'全国',
+     owner:'李静',industry:'酒店集团',credit:'91310000132209936L',addr:'上海市黄浦区延安东路 100 号',
+     web:'jinjiang.com',tags:['供应'],
+     contacts:[{n:'钱峰',t:'分销负责人',p:'138****2234',k:'决策人'}],
+     deals:[],attach:['华东包房协议.pdf'],
+     brief:'华东区域包房资源，Q4 有 620 家门店可锁房，价格优势明显。'},
+    {id:'s3',name:'亚朵酒店集团',short:'亚朵',level:'重点',status:'考察中',city:'全国',
+     owner:'王磊',industry:'酒店集团',credit:'91310115MA1H8T6R2P',addr:'上海市闵行区申长路 988 号',
+     web:'yaduo.com',tags:['供应'],
+     contacts:[{n:'李昂',t:'商务拓展',p:'139****7788',k:'对接人'}],
+     deals:[],attach:[],
+     brief:'中高端定位，正在谈 12 城试点，试点通过后再全国铺开。'},
+    {id:'s4',name:'环宇假期（批发）',short:'环宇假期',level:'重点',status:'合作中',city:'东南亚',
+     owner:'张倩',industry:'批发商',credit:'91440300MA5D3K8Y6T',addr:'深圳市罗湖区深南东路 5001 号',
+     web:'huanyu-holiday.com',tags:['供应'],
+     contacts:[{n:'黄伟',t:'产品经理',p:'135****3341',k:'对接人'}],
+     deals:[],attach:['东南亚包房清单.xlsx'],
+     brief:'东南亚机+酒打包资源，适合做差异化产品，毛利高于纯房。'},
+    {id:'s5',name:'中青旅控股股份有限公司',short:'中青旅',level:'普通',status:'暂停',city:'北京',
+     owner:'李静',industry:'TMC',credit:'91110000100006611B',addr:'北京市东城区东直门南大街 5 号',
+     web:'cyts.com',tags:['供应','分销'],
+     contacts:[{n:'刘洋',t:'资源合作',p:'136****5521',k:'对接人'}],
+     deals:[],attach:[],
+     brief:'互采互销：既向我们供应华北房源，也把央企客户分销给我们；2026 年因价格倒挂暂停，观察中。'},
+    {id:'o1',name:'旅界传媒（行业媒体）',short:'旅界传媒',level:'普通',status:'潜在',city:'上海',
+     owner:'王磊',industry:'行业媒体',credit:'91310115MA1K5T7X8N',addr:'上海市静安区南京西路 1601 号',
+     web:'lvjie.com',tags:['其他'],
+     contacts:[{n:'蒋维',t:'商务',p:'137****6677',k:'潜在决策人'}],
+     deals:[],attach:[],
+     brief:'行业媒体，可做品牌投放与发现渠道合作，暂不涉及分销业务。'}
+  ],
+  deals:[
+    /* stageAt：进入当前阶段的日期，用于"停留 N 天"角标（PRD 11.9） */
+    {id:'d1',cid:'c1',title:'2027 年度框架续签',stage:2,stageAt:'2026-11-08',nights:15000,gmv:10500000,expect:'2026-12-31',
+     owner:'王磊',note:'客户关注华南区覆盖与旺季房量保障，希望 11 月底前给到正式报价。',lost:''},
+    {id:'d2',cid:'c2',title:'华南区增量合作',stage:1,stageAt:'2026-11-16',nights:4800,gmv:3360000,expect:'2026-12-15',
+     owner:'李静',note:'已试单 2 个月，计划把亚朵资源打包进企业差旅方案。',lost:''},
+    {id:'d3',cid:'c3',title:'首次合作试单',stage:1,stageAt:'2026-11-09',nights:600,gmv:420000,expect:'2027-01-10',
+     owner:'王磊',note:'试单 120 间夜，结算准时，准备推正式协议。',lost:''},
+    {id:'d4',cid:'c4',title:'2027 年重新招标',stage:0,stageAt:'2026-11-15',nights:3000,gmv:2100000,expect:'2027-02-28',
+     owner:'张倩',note:'对手报价低于我们 6%，需总部支持特殊折扣。',lost:''}
+  ],
+  follows:{
+    c1:[
+      {date:'11-18',type:'电话',by:'王磊',text:'沟通 2027 年框架续签，客户重点关注华南区覆盖与旺季房量保障，希望 11 月底前给到报价。',next:'11-25'},
+      {date:'11-12',type:'拜访',by:'王磊',text:'到上海总部拜访采购总监陈明，确认明年预算增长 15%，可接受 3% 返佣。',next:'11-25'},
+      {date:'11-05',type:'微信',by:'李静',text:'发送 Q4 华东区协议价表与可售酒店清单，客户已确认收到。',next:'11-12'}
+    ],
+    c2:[{date:'11-15',type:'拜访',by:'李静',text:'深圳拜访运营总监吴桐，确认增量合作按试单数据推进，需补充亚朵资源。',next:'11-28'}],
+    c3:[{date:'11-10',type:'电话',by:'王磊',text:'回访试单体验，客户反馈入住确认速度偏慢，已转运营跟进。',next:'11-24'}],
+    c4:[{date:'10-19',type:'电话',by:'张倩',text:'询价 2027 年北京区域，客户表示上家返佣 8%，需我们给出更有竞争力的方案。',next:'11-26'}],
+    c5:[{date:'11-15',type:'微信',by:'李静',text:'添加商务负责人何静微信，介绍了产品线，等待对方内部评估。',next:'11-22'}],
+    s1:[{date:'11-16',type:'拜访',by:'王磊',text:'与徐蕾沟通 2027 年协议价，旺季（春节）房量保障比例从 70% 提到 80%。',next:'11-30'}],
+    s2:[{date:'11-08',type:'电话',by:'李静',text:'确认 Q4 华东包房锁房 620 间/日，价格维持不变。',next:'12-05'}],
+    s3:[{date:'11-14',type:'拜访',by:'王磊',text:'亚朵商务拓展李昂来访，确认 12 城试点方案，等其内部审批。',next:'11-27'}],
+    s4:[{date:'11-06',type:'邮件',by:'张倩',text:'收到东南亚 Q4 包房清单，价格上浮 4%，已同步给产品。',next:'12-01'}],
+    s5:[{date:'09-28',type:'电话',by:'李静',text:'价格倒挂未解决，暂不推进。',next:''}]
+  },
+  plans:{
+    c1:{date:'2026-11-25', note:'给 2027 年度框架续签报价（含华南区覆盖方案）', by:'王磊'},
+    c2:{date:'2026-11-28', note:'补齐亚朵资源，推进华南增量合作', by:'李静'},
+    c3:{date:'2026-11-20', note:'回访试单体验，确认入住确认速度是否改善', by:'王磊'},
+    c4:{date:'2026-11-18', note:'给 2027 年特殊折扣方案，抢回北京区域', by:'张倩'},
+    c5:{date:'2026-12-02', note:'首次电话沟通，确认是否有分销需求', by:'李静'},
+    s1:{date:'2026-11-30', note:'确认 2027 协议价与旺季房量保障比例', by:'王磊'},
+    s2:{date:'2026-12-05', note:'华东包房 Q4 结算与 2027 续签', by:'李静'},
+    s3:{date:'2026-11-27', note:'跟进 12 城试点审批结果', by:'王磊'},
+    s4:{date:'2026-12-01', note:'价格上浮 4% 的复议，争取维持原价', by:'张倩'},
+    s5:{date:'2026-11-22', note:'价格倒挂复盘，决定是否恢复互采', by:'李静'},
+    o1:null
+  },
+  leads:[
+    {id:'l1',name:'悦途商旅（上海）',src:'公众号',contact:'周航',phone:'138****7712',status:'待跟进',city:'上海',owner:'王磊',created:'11-18'},
+    {id:'l2',name:'深圳市恒信商旅服务有限公司',src:'展会名录',contact:'陈曦',phone:'139****9021',status:'已联系',city:'深圳',owner:'李静',created:'11-19'},
+    {id:'l3',name:'西部商旅（西安）',src:'转介绍',contact:'马骁',phone:'137****3388',status:'待跟进',city:'西安',owner:'王磊',created:'11-17'}
+  ],
+  pool:[
+    {id:'p1',name:'深圳市恒信商旅服务有限公司',channel:'展会名录',detail:'2026 中国商旅管理峰会 · 参会名录',
+     found:'11-19 08:00',city:'深圳',snippet:'差旅服务商，50–100 人规模，展位联系人 陈曦（139****9021）'},
+    {id:'p2',name:'中国通信建设集团（差旅采购）',channel:'招标网',detail:'2027 年度差旅服务采购公告',
+     found:'11-19 08:00',city:'北京',snippet:'投标截止 12-05，服务范围含酒店协议价与预订服务，需具备 TMC 资质'},
+    {id:'p3',name:'悦途商旅（上海）',channel:'行业公众号',detail:'新晋 TMC 获 A 轮融资',
+     found:'11-18 08:00',city:'上海',snippet:'融资后计划扩张华南区，公开报道提到正在寻找酒店资源方'}
+  ],
+  channels:[
+    {id:'ch1',name:'展会名录',type:'行业展会',url:'https://expo.travelchina.cn/2026/list',
+     kw:'商旅 差旅 TMC',freq:'每周一 08:00',scope:'全国',on:true,last:'11-19',hit:8},
+    {id:'ch2',name:'招标网',type:'招标公告',url:'https://www.bidcenter.cn/search?kw=差旅',
+     kw:'差旅服务 酒店采购',freq:'每日 08:00',scope:'全国',on:true,last:'11-19',hit:12},
+    {id:'ch3',name:'行业公众号',type:'内容平台',url:'公众号：旅界观察 / 商旅圈',
+     kw:'商旅 分销 融资',freq:'每日 08:00',scope:'华东、华南',on:true,last:'11-18',hit:5},
+    {id:'ch4',name:'环球旅讯',type:'行业媒体',url:'https://www.traveldaily.cn/search',
+     kw:'TMC 商旅',freq:'每周一 08:00',scope:'全国',on:false,last:'11-12',hit:3}
+  ]
+};
+
+/* ============================================================ 状态 */
+const S = {screen:'partners', param:null, hist:[], ctab:'概览', leadSeg:'pool',
+  filters:{tag:'全部'}, q:'', searching:false, followCompany:null,
+  voice:null, photos:0, modal:null, loseReason:'价格', codeTimer:null,
+  draft:{}, newTags:['分销'], newLevel:'重点', chEdit:null, chDraft:null};
+
+/* ============================================================ 工具 */
+const $ = s => document.querySelector(s);
+const view = $('#view'), tabbar = $('#tabbar'), toastEl = $('#toast');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const money = n => {
+  if (n < 10000) return n.toLocaleString();
+  const w = n / 10000;
+  return (Number.isInteger(w) ? w.toLocaleString() : w.toFixed(1)) + ' 万';
+};
+const num = n => n.toLocaleString();
+const comp = id => DB.companies.find(c => c.id === id);
+const dealOf = id => DB.deals.find(d => d.id === id);
+const initials = n => n.replace(/[（(].*$/,'').slice(0,2);
+
+/* ---- 跟进计划 ---- */
+const TODAY = '2026-11-20';
+const planOf = id => DB.plans[id] || null;
+const dayGap = d => Math.round((new Date(d + 'T00:00:00') - new Date(TODAY + 'T00:00:00')) / 86400000);
+const planTag = p => {
+  const g = dayGap(p.date);
+  if (g < 0) return '逾期 ' + (-g) + ' 天';
+  if (g === 0) return '今天';
+  if (g === 1) return '明天';
+  return g + ' 天后';
+};
+const planCls = p => { const g = dayGap(p.date); return g < 0 ? 'late' : (g === 0 ? 'today' : ''); };
+const planShort = d => d.slice(5).replace('-', '-');
+const sortByPlan = list => list.slice().sort((a, b) => {
+  const pa = planOf(a.id), pb = planOf(b.id);
+  if (!pa && !pb) return 0;
+  if (!pa) return 1;
+  if (!pb) return -1;
+  return pa.date.localeCompare(pb.date) || a.name.localeCompare(b.name);
+});
+
+function toast(msg){
+  toastEl.textContent = msg; toastEl.classList.add('on');
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(()=> toastEl.classList.remove('on'), 2000);
+}
+function statusPill(status){
+  const map = {'合作中':'green','试单':'amber','暂停':'grey','潜在':'blue','考察中':'amber','淘汰':'red'};
+  return '<span class="pill ' + (map[status]||'grey') + '">' + status + '</span>';
+}
+function levelPill(level){
+  const cls = level==='战略' ? 'blue' : (level==='重点' ? 'amber' : 'grey');
+  return '<span class="pill ' + cls + '">' + level + '</span>';
+}
+const chev = '<svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M7.5 1 1.8 7l5.7 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const arrow = '<svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/* ============================================================ 导航 */
+const NAV = [
+  {g:'登录'},
+  {k:'login', label:'登录 / 密码', sc:'login', req:'1.1'},
+  {g:'合作商'},
+  {k:'partners', label:'合作商列表（标签筛选）', sc:'partners', req:'8.5'},
+  {k:'company-c1', label:'合作商档案（360）', sc:'company', pm:'c1', req:'6.6'},
+  {k:'company-s5', label:'互采互销示例（双标签）', sc:'company', pm:'s5', req:'6.2'},
+  {k:'new', label:'新建合作商', sc:'companyNew', req:'6.1'},
+  {g:'发现'},
+  {k:'discover', label:'发现（三视图）', sc:'discover', req:'11.1'},
+  {k:'deal', label:'商机详情 / 阶段推进', sc:'deal', pm:'d1', req:'11.6'},
+  {g:'跟进'},
+  {k:'follow', label:'记跟进', sc:'follow', req:'12.1'},
+  {k:'todo', label:'待跟进列表（今天 / 逾期）', sc:'todo', req:'12.9'},
+  {g:'我的'},
+  {k:'mine', label:'我的（微信风）', sc:'mine', req:'1.3'},
+  {k:'channels', label:'采集渠道配置', sc:'channels', req:'5.3'}
+];
+const META = {
+  login:{t:'登录', rq:['1.2 密码登录','1.3 账号开通与停用','1.4 登录状态与自动退出'],
+    tip:'本期只支持手机号 + 密码登录；忘记密码由管理员重置（原型任意密码可通过）。'},
+  partners:{t:'合作商列表（统一）', rq:['8.5 合作商列表','8.5 按跟进计划排序','8.2 合作标签','6.2 标签可增删改'],
+    tip:'列表按「下次跟进计划」时间由近到远排序（逾期的排最前）；华程国旅已逾期，旅界传媒缺计划排最后。'},
+  company:{t:'合作商档案（360 视图）', rq:['6.6 企业详情聚合页','6.3 工商与资质','12.10 跟进计划置顶','8.6 合作商 360'],
+    tip:'进「跟进」页签：每家只有一条「下次跟进计划」，可修改/改期/标记完成。'},
+  companyNew:{t:'新建合作商', rq:['6.1 合作商新建与编辑','6.2 合作商标签','6.9 归属与协作人'],
+    tip:'选标签（可多选）后保存，会回到列表；标签下拉来自「标签管理」。'},
+  discover:{t:'发现', rq:['11.1 发现登记','11.2 来源字典','11.3 分配与认领','11.4 转为合作商','5.4 定期自动采集','11.6 商机阶段'],
+    tip:'三个视图：待确认线索池 → 认领；我的发现；商机。渠道配置入口已移到「我的」。'},
+  channels:{t:'采集渠道配置', rq:['5.3 渠道配置（名称/地址/关键词/频率/范围）','5.4 定期自动采集线索'],
+    tip:'点卡片改配置，右上「＋」新增渠道；开关可停用，点「立即采集一次」看结果进入待确认池。'},
+  deal:{t:'商机详情', rq:['11.6 商机阶段','11.7 赢单/输单原因','11.5 商机新建字段'],
+    tip:'点「推进到下一阶段」，或试试点「标记输单」选原因。'},
+  follow:{t:'记跟进', rq:['6.1 文字跟进','6.5 下次跟进时间','6.7 关联对象','6.10 自动生成计划'],
+    tip:'本期只有文字记录；保存后写入时间轴，并把唯一一条计划覆盖为所选日期。编辑已有记录时标题变为「编辑跟进」。'},
+  todo:{t:'待跟进列表', rq:['12.9 待跟进列表','12.5 下次跟进时间','12.10 计划置顶'],
+    tip:'「今天要跟进」与「已逾期」两个分区；逾期按日期从早到晚。点整行进档案跟进页，点「拨打」直接拨主联系人。'},
+  mine:{t:'我的（微信风）', rq:['1.3 账号开通与停用','1.5 登录状态','5.3 采集渠道配置入口','6.2 标签管理入口','11.2 来源字典入口'],
+    tip:'模仿微信「我」：只有个人信息 + 设置列表，没有工作模块；渠道配置、标签管理、来源字典都在这里。'}
+};
+const TABS = [
+  {k:'partners', label:'合作商', sc:'partners',
+   svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3.6 9.4 12 4.4l8.4 5v9.2a1 1 0 0 1-1 1H4.6a1 1 0 0 1-1-1z" stroke-linejoin="round"/><path d="M9.2 19.6v-5.2h5.6v5.2" stroke-linejoin="round"/></svg>'},
+  {k:'discover', label:'发现', sc:'discover',
+   svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.2"/><path d="m15.2 8.8-1.9 4.4-4.4 1.9 1.9-4.4z" stroke-linejoin="round"/></svg>'},
+  {k:'mine', label:'我的', sc:'mine',
+   svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8.5" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke-linecap="round"/></svg>'}
+];
+
+function go(screen, param){
+  if (S.screen !== screen || S.param !== (param || null)) {
+    S.hist.push({s:S.screen, p:S.param, c:S.ctab});
+    if (S.hist.length > 30) S.hist.shift();
+  }
+  S.screen = screen; S.param = param || null;
+  S.ctab = '概览'; S.leadSeg = S.leadSeg || 'pool';
+  S.q = ''; S.searching = false; S.draft = {};
+  S.newType = null; S.newLines = []; S.newStatus = null; S.newLevel = null; S.newTags = null;
+  if (screen === 'follow') { S.followCompany = param || 'c1'; S.voice = null; S.photos = 0; S.followType = '电话'; S.followNext = '3 天后'; }
+  S.modal = null;
+  render(); view.scrollTop = 0;
+}
+function back(){
+  const h = S.hist.pop();
+  if (h) { S.screen = h.s; S.param = h.p; S.ctab = h.c || '概览'; S.modal = null; render(); view.scrollTop = 0; }
+}
+
+/* ============================================================ 屏幕 */
+function navBack(title, right){
+  return '<div class="navbar"><button class="back" data-act="back">'+chev+'</button>'+
+    '<div class="nt">'+title+'</div><div class="nr">'+(right||'')+'</div></div>';
+}
+const magSvg = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21" stroke-linecap="round"/></svg>';
+const plusSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+
+function navPartners(){
+  if (S.searching){
+    return '<div class="navbar">' +
+      '<div class="searchbox">' +
+        '<span style="color:#98A2B3;display:flex">' + magSvg + '</span>' +
+        '<input id="q" placeholder="搜索合作商名称、城市" value="' + esc(S.q) + '">' +
+      '</div>' +
+      '<button class="cancel" data-act="cancel-search">取消</button></div>';
+  }
+  return '<div class="navbar"><div class="nt" style="padding-left:8px">合作商</div>' +
+    '<div class="nr">' +
+      '<button class="iconbtn" data-act="search">' + magSvg + '</button>' +
+      '<button class="iconbtn" data-act="go" data-to="companyNew">' + plusSvg + '</button>' +
+    '</div></div>';
+}
+
+function navSearch(title, addTo){
+  const btn = addTo
+    ? '<button class="iconbtn" data-act="go" data-to="'+addTo+'">'+
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>'
+    : '';
+  return '<div class="navbar"><div class="nt" style="padding-left:8px">'+title+'</div>'+
+    '<div class="nr">'+btn+'</div></div>';
+}
+
+function screenLogin(){
+  return ''+
+  '<div style="padding:52px 26px 0">'+
+    '<div style="width:58px;height:58px;border-radius:17px;background:linear-gradient(135deg,#22385F,#2C4C86);'+
+      'display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;'+
+      'box-shadow:0 12px 26px -12px rgba(31,56,100,.7)">商</div>'+
+    '<div style="font-size:23px;font-weight:800;margin-top:20px;letter-spacing:.01em">商旅分销 CRM</div>'+
+    '<div class="tiny" style="margin-top:7px">内部使用 · 上下游客户与供应商管理</div>'+
+  '</div>'+
+  '<div style="padding:30px 26px 0">'+
+    '<div class="field"><label>手机号</label><input id="li-phone" inputmode="numeric" placeholder="请输入手机号" value="138****6621"></div>'+
+    '<div class="field"><label>密码</label><input id="li-pwd" type="password" placeholder="请输入密码" value="······"></div>'+
+    '<button class="btn primary" style="width:100%;margin-top:22px" data-act="login">登 录</button>'+
+    '<div style="display:flex;justify-content:space-between;margin-top:14px">'+
+      '<span class="tiny" data-act="toast" data-msg="忘记密码请联系管理员重置（1.3）" style="color:#2C4C86;font-weight:600">忘记密码？</span>'+
+      '<span class="tiny">未开通账号请联系管理员</span></div>'+
+    '<div class="tiny" style="text-align:center;margin-top:34px;line-height:1.7">本期仅支持手机号 + 密码登录<br>密码错误 5 次锁定 15 分钟</div>'+
+  '</div>';
+}
+function screenPartners(){
+  const cur = S.filters.tag || '全部';
+  const tabs = ['全部'].concat(DB.tags);
+  const list = DB.companies.filter(c => cur === '全部' || (c.tags || []).indexOf(cur) >= 0);
+
+  const chips = '<div class="chips">' + tabs.map(t =>
+      '<button class="chip ' + (t === cur ? 'on' : '') + '" data-act="chip" data-group="tag" data-value="' + t + '">' + t + '</button>'
+    ).join('') +
+    '<button class="chip" data-act="tags" style="color:#2C4C86;background:#EDF1F9">⚙ 标签</button></div>';
+
+  let rows = sortByPlan(list).map(c => {
+    const st = c.status === '合作中' ? 'on' : (c.status === '暂停' ? 'pause' : 'off');
+    const tg = (c.tags || []).map(t => '<span class="tag">' + t + '</span>').join('');
+    const lf = (DB.follows[c.id] || [])[0];
+    const lastText = lf ? ('最近跟进 ' + lf.date) : '暂无跟进';
+    const pl = planOf(c.id);
+    const planLine = pl
+      ? '<div class="pl ' + planCls(pl) + '"><b>' + planShort(pl.date) + '</b>' +
+        '<span style="overflow:hidden;text-overflow:ellipsis">' + planTag(pl) + ' · ' + esc(pl.note) + '</span></div>'
+      : '<div class="pl none"><b>待补计划</b><span>还没有计划，排在最前之外的最后</span></div>';
+    return '<div class="row" data-act="go" data-to="company" data-id="' + c.id + '" data-text="' +
+        esc(c.name + c.short + c.city + c.level + c.status + (c.tags || []).join('')) + '">' +
+      '<div class="avatar">' + initials(c.name) + '</div>' +
+      '<div class="main">' +
+        '<div class="t">' + esc(c.name) + '</div>' +
+        '<div class="s" style="white-space:normal;line-height:1.7">' + tg +
+          '<span>' + esc(c.industry) + ' · ' + esc(c.city) + ' · ' + esc(c.owner) + '</span></div>' +
+        '<div class="f"><span class="dot ' + st + '"></span>' + c.status + ' · ' + lastText + '</div>' +
+        planLine +
+      '</div>' + levelPill(c.level) + '</div>';
+  }).join('');
+  if (!rows) rows = '<div class="empty">该标签下还没有合作商</div>';
+
+  return navPartners() +
+    chips +
+    '<div class="pad" style="padding-top:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin:0 2px 9px">' +
+        '<span class="tiny" id="listCount">共 ' + list.length + ' 家合作商</span>' +
+        '<span class="tiny">按下次跟进计划排序</span></div>' +
+      '<div class="list" id="bizList">' + rows + '</div>' +
+      '<div class="tiny" style="text-align:center;margin-top:14px">每家必须有「下次跟进计划」，列表按计划时间由近到远（含逾期置前）</div>' +
+    '</div>';
+}
+function screenCompany(id){
+  const c = comp(id) || DB.companies[0];
+  const tabs = ['概览','联系人','跟进','商机'];
+  const tab = S.ctab || '概览';
+  const followsArr = DB.follows[c.id] || [];
+  const ds = DB.deals.filter(d => d.cid === c.id);
+  const planTop = planOf(c.id);
+  const metrics = [['进行中商机', String(ds.length)], ['本月跟进', String(followsArr.length)],
+                   ['联系人', String(c.contacts.length)], ['下次跟进', planTop ? planShort(planTop.date) : '待补']];
+
+  let body = '';
+  if (tab === '概览'){
+    body = '<div class="card" style="margin:14px 14px 0"><div class="info">' +
+      '<div class="ri"><b>企业简称</b><span>' + esc(c.short) + '</span></div>' +
+      '<div class="ri"><b>统一社会信用代码</b><span>' + esc(c.credit) + '</span></div>' +
+      '<div class="ri"><b>行业</b><span>' + esc(c.industry) + '</span></div>' +
+      '<div class="ri"><b>所在城市</b><span>' + esc(c.city) + '</span></div>' +
+      '<div class="ri"><b>注册地址</b><span>' + esc(c.addr) + '</span></div>' +
+      '<div class="ri"><b>官网</b><span>' + esc(c.web) + '</span></div>' +
+      '<div class="ri"><b>归属 / 协作</b><span>' + esc(c.owner) + ' / 王磊、李静</span></div>' +
+      '<div class="ri"><b>合作标签</b><span>' + c.tags.join('、') + '</span></div>' +
+      '<div class="ri"><b>合作方式</b><span>协议价 · 包房</span></div>' +
+      '</div></div>' +
+      supplySection(c) +
+      '<div class="sec">企业简介</div>' +
+      '<div class="card" style="margin:0 14px;padding:13px 14px"><div style="font-size:13px;line-height:1.65;color:#3A465C">' + esc(c.brief) + '</div></div>' +
+      '<div class="sec">附件（' + c.attach.length + '）</div>' +
+      (c.attach.length
+        ? '<div class="card" style="margin:0 14px;padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap">' +
+          c.attach.map(a => '<span class="pill">📎 ' + esc(a) + '</span>').join('') +
+          '<span class="pill" style="border:1px dashed #CBD3E1;background:#fff;color:#8A94A6">+ 拍照上传</span></div>'
+        : '<div class="card" style="margin:0 14px;padding:16px;text-align:center"><span class="tiny">暂无附件，点此拍照上传营业执照（6.3）</span></div>') +
+      '<div class="sec">最近跟进</div>' +
+      '<div class="card" style="margin:0 14px"><div class="tl" style="padding-top:14px">' +
+        (followsArr.slice(0, 2).map((f, i) => followItem(f, i === 0)).join('') || '<div class="empty">还没有跟进记录</div>') +
+      '</div></div>' +
+      '<div style="height:14px"></div>';
+  }
+  if (tab === '联系人'){
+    body = '<div class="pad"><div class="card">' +
+      (c.contacts.map(p =>
+        '<div class="row" data-act="toast" data-msg="拨号 ' + p.p + '（原型演示）">' +
+        '<div class="avatar" style="border-radius:50%">' + p.n.slice(0, 1) + '</div>' +
+        '<div class="main"><div class="t">' + esc(p.n) + ' <span class="pill" style="margin-left:4px">' + esc(p.k) + '</span></div>' +
+        '<div class="s">' + esc(p.t) + ' · ' + esc(p.p) + '</div></div>' +
+        '<span style="color:#B9C1CF">' + arrow + '</span></div>').join('') ||
+        '<div class="empty">还没有联系人</div>') +
+      '</div><div class="tiny" style="text-align:center;margin-top:13px">联系人管理为二期功能（7），此处先展示结构</div></div>';
+  }
+  if (tab === '跟进'){
+    const pl = planOf(c.id);
+    const planBody = pl
+      ? '<div class="planrow"><div class="dt ' + planCls(pl) + '">' + planShort(pl.date) +
+          '<span>' + planTag(pl) + '</span></div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13.5px;line-height:1.55">' + esc(pl.note) + '</div>' +
+            '<div class="tiny" style="margin-top:5px">负责人 ' + esc(pl.by) + ' · ' + pl.date + '</div>' +
+            '<div style="display:flex;gap:8px;margin-top:10px">' +
+              '<button class="btn line small" data-act="plan-edit" data-id="' + c.id + '">改期</button>' +
+              '<button class="btn line small" data-act="plan-done" data-id="' + c.id + '">标记完成</button>' +
+            '</div></div></div>'
+      : '<div style="padding:18px 14px;text-align:center">' +
+          '<div class="tiny" style="color:#C0392B">该合作商还没有“下次跟进计划”</div>' +
+          '<div class="tiny" style="margin-top:4px">先建档后补计划即可；缺计划的会排到首页最后</div>' +
+          '<button class="btn primary small" style="margin-top:12px" data-act="plan-new" data-id="' + c.id + '">添加跟进计划</button></div>';
+
+    body = '<div class="plancard">' +
+        '<div class="planh"><div style="font-size:13.5px;font-weight:700;color:#1F3864">下次跟进计划<span class="pin">置顶</span></div>' +
+        (pl
+          ? '<button class="btn line small" data-act="plan-edit" data-id="' + c.id + '">修改</button>'
+          : '<button class="btn line small" data-act="plan-new" data-id="' + c.id + '">新增</button>') +
+        '</div>' + planBody + '</div>' +
+      '<div class="tiny" style="text-align:center;margin-top:9px">每家只保留一条计划 · 首页按它排序</div>' +
+      '<div class="sec">历史跟进（' + followsArr.length + '）</div>' +
+      '<div class="card" style="margin:0 14px"><div class="tl" style="padding-top:14px">' +
+        (followsArr.map((f, i) => followItem(f, i === 0, c.id, i)).join('') || '<div class="empty">还没有跟进记录</div>') +
+      '</div></div>' +
+      '<div class="tiny" style="text-align:center;padding:14px 0 16px">历史按时间倒序；首页排序只看置顶的计划时间</div>';
+  }
+  if (tab === '商机'){
+    body = '<div class="pad">' +
+      (ds.length ? ds.map(d => dealCard(d)).join('')
+        : '<div class="card" style="padding:26px;text-align:center"><div class="tiny">暂无商机</div>' +
+          '<button class="btn primary small" style="margin-top:12px" data-act="toast" data-msg="新建商机（11.5）">新建商机</button></div>') +
+      '</div>';
+  }
+
+  const actBar = '<div class="actionbar">' +
+      '<button class="btn ghost" data-act="toast" data-msg="拨号 ' + (c.contacts[0] ? c.contacts[0].p : '') + '（原型演示）" style="flex:.55">拨打</button>' +
+      '<button class="btn primary" data-act="go" data-to="follow" data-id="' + c.id + '">记跟进</button></div>';
+
+  return navBack('合作商档案', '<button class="iconbtn" data-act="toast" data-msg="编辑（6.1）"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20h4l10-10-4-4L4 16v4Z"/><path d="m14 6 4 4"/></svg></button>') +
+    '<div class="hero">' +
+      '<div class="tags" style="margin:0 0 8px">' +
+        '<span class="solid">' + c.level + '</span>' +
+        c.tags.map(t => '<span>' + t + '</span>').join('') +
+      '</div>' +
+      '<div class="hn">' + esc(c.name) + '</div>' +
+      '<div class="hm">' + esc(c.city) + ' · ' + esc(c.industry) + ' · 归属 ' + esc(c.owner) + ' · ' +
+        '<span class="statuslink" data-act="status-open" data-id="' + c.id + '">' + c.status + ' ⇄</span></div>' +
+    '</div>' +
+    '<div class="metrics">' + metrics.map(m => '<div><b>' + m[1] + '</b><i>' + m[0] + '</i></div>').join('') + '</div>' +
+    '<div class="segs">' + tabs.map(t => '<button class="' + (t === tab ? 'on' : '') + '" data-act="ctab" data-tab="' + t + '">' + t + '</button>').join('') + '</div>' +
+    body + actBar;
+}
+/* ---- 资源方（供应侧）扩展字段 ---- */
+const SUPPLY = {
+  s1:{types:'酒店集团', cities:'320', hotels:'8,600', roomType:'标准间 / 大床', peak:'春节 80% 房量',
+      modes:'协议价、团体房', start:'2021-03', settle:'月结', days:'30', access:'合作中'},
+  s2:{types:'酒店集团', cities:'280', hotels:'7,200', roomType:'标准间 / 套房', peak:'Q4 620 间/日',
+      modes:'包房', start:'2022-06', settle:'月结', days:'45', access:'合作中'},
+  s3:{types:'酒店集团', cities:'190', hotels:'1,200', roomType:'商务大床', peak:'试点期不保量',
+      modes:'协议价', start:'—', settle:'预付', days:'—', access:'考察中'},
+  s4:{types:'批发商', cities:'12', hotels:'480', roomType:'机+酒套餐', peak:'旺季上浮 4%',
+      modes:'代理', start:'2023-02', settle:'预付', days:'—', access:'合作中'},
+  s5:{types:'TMC、同业', cities:'60', hotels:'900', roomType:'标准间', peak:'未承诺',
+      modes:'协议价', start:'2025-01', settle:'月结', days:'30', access:'暂停'}
+};
+
+function supplySection(c){
+  if ((c.tags || []).indexOf('供应') < 0) return '';
+  const d = SUPPLY[c.id];
+  const row = (k, v) => '<div class="ri"><b>' + k + '</b><span>' + esc(v || '—') + '</span></div>';
+  const inner = d
+    ? row('资源方类型', d.types) + row('覆盖城市', d.cities + ' 个') + row('合作酒店', d.hotels + ' 家') +
+      row('主要房型', d.roomType) + row('旺季保障', d.peak) + row('合作模式', d.modes) +
+      row('合作起始', d.start) +
+      row('结算方式', d.settle + (d.days !== '—' ? ' · 账期 ' + d.days + ' 天' : '')) +
+      row('准入状态', d.access)
+    : '<div style="padding:16px 0;text-align:center"><span class="tiny">还没有填写资源方信息</span></div>';
+  return '<div class="sec">资源方信息 <span class="pin" style="background:#2E7D4F">供应</span></div>' +
+    '<div class="card" style="margin:0 14px;padding:2px 14px"><div class="info" style="padding:0">' + inner + '</div></div>';
+}
+
+function followItem(f, first, cid, idx){
+  /* 软删：时间轴保留占位，不再提供操作入口（PRD 12.8） */
+  if (f.deleted){
+    return '<div class="it f">'+
+      '<div class="hd"><b style="color:#B9C1CF">'+f.date+'</b> · '+f.type+'</div>'+
+      '<div class="bd" style="color:#9AA3AF">该记录已被删除（管理员可见删除原因）</div>'+
+    '</div>';
+  }
+  /* cid / idx 只在「跟进」页签传，用于支撑编辑与删除；概览的最近跟进不传，不显示操作入口 */
+  const more = (cid !== undefined)
+    ? '<button class="itmore" data-act="follow-more" data-cid="' + cid + '" data-i="' + idx + '">···</button>'
+    : '';
+  return '<div class="it'+(first?'':' f')+'">'+
+    '<div class="hd"><span><b style="color:#3A465C">'+f.date+'</b> · '+f.type+' · '+esc(f.by)+'</span>'+more+'</div>'+
+    '<div class="bd">'+esc(f.text)+'</div>'+
+    (f.next ? '<div class="nx">下次跟进 '+f.next+'</div>' : '')+
+  '</div>';
+}
+
+function dealCard(d){
+  const c = comp(d.cid);
+  const st = ['接洽','试单','报价','签约','赢单'][d.stage] || '接洽';
+  /* 阶段停留天数 = 今天 - 进入本阶段的日期；> 7 天给红点角标（PRD 11.9） */
+  const stay = (d.stage < 4 && d.stageAt) ? Math.max(0, -dayGap(d.stageAt)) : 0;
+  const badge = stay > 7 ? '<span class="staybadge">停留 ' + stay + ' 天</span>' : '';
+  return '<div class="card" style="padding:13px 14px;margin-bottom:10px;cursor:pointer" data-act="go" data-to="deal" data-id="'+d.id+'">'+
+    '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">'+
+      '<div style="font-size:14.5px;font-weight:700;line-height:1.35">'+badge+esc(d.title)+'</div>'+
+      '<span class="pill '+(d.stage>=4?'green':(d.stage>=2?'blue':'amber'))+'">'+st+'</span></div>'+
+    '<div class="tiny" style="margin-top:6px">'+esc(c?c.name:'')+'</div>'+
+    '<div style="display:flex;gap:14px;margin-top:9px;font-size:12px;color:#5A6A85">'+
+      '<span>预计 '+num(d.nights)+' 间夜</span><span>GMV '+money(d.gmv)+'</span></div>'+
+  '</div>';
+}
+
+function screenCompanyNew(){
+  const levels = ['战略','重点','普通'];
+  const curLevel = S.newLevel || '重点';
+  const types = ['TMC','商旅分销','企业客户','其他'];
+  const curType = S.newType || '商旅分销';
+  const linesAll = ['协议价','包房','团体','机+酒'];
+  const curLines = S.newLines || [];
+  const statuses = ['潜在','试单','合作中','暂停','流失'];
+  const curStatus = S.newStatus || '潜在';
+  const on = S.newTags || ['分销'];
+  const v = k => esc(S.draft[k] || '');
+  return navBack('新建合作商',
+    '<button class="btn primary small" data-act="save-company">保存</button>') +
+    '<div class="banner"><span class="bl">只建一条</span><span>合作商不区分客户与供应商，选标签即可；同一家既是分销又是供应时两个都选（6.2）。</span></div>' +
+    '<div class="form" style="margin-top:6px">' +
+      '<div class="field"><label>企业名称 <span style="color:#C0392B">*</span></label>' +
+        '<input id="n-name" placeholder="请输入工商全称" value="' + v('n-name') + '"></div>' +
+      '<div class="field"><label>企业简称</label><input id="n-short" placeholder="用于列表与跟进记录显示" value="' + v('n-short') + '"></div>' +
+      '<div class="field"><label>统一社会信用代码</label><input id="n-credit" placeholder="18 位，用于查重（2.9）" value="' + v('n-credit') + '"></div>' +
+      '<div class="field"><label>行业</label><input id="n-industry" placeholder="如 TMC / 商旅分销 / 酒店集团" value="' + v('n-industry') + '"></div>' +
+      '<div class="field"><label>所在城市</label><input id="n-city" placeholder="如 上海" value="' + v('n-city') + '"></div>' +
+      '<div class="field"><label>注册地址</label><input id="n-addr" placeholder="工商注册地址" value="' + v('n-addr') + '"></div>' +
+      '<div class="field"><label>官网</label><input id="n-web" placeholder="如 huazhu.com" value="' + v('n-web') + '"></div>' +
+      '<div class="field"><label>合作标签 <span style="color:#C0392B">*</span></label>' +
+        '<div class="seg-line" style="margin-top:4px">' +
+          DB.tags.map(t => '<button class="chip ' + (on.indexOf(t) >= 0 ? 'on' : '') + '" data-act="newtag" data-tag="' + t + '">' + t + '</button>').join('') +
+          '<button class="chip" data-act="tags" style="color:#2C4C86;background:#EDF1F9">⚙ 管理</button>' +
+        '</div><div class="hint">可多选；标签在「我的 → 标签管理」里增删改</div></div>' +
+      '<div class="field"><label>合作类型 <span style="color:#C0392B">*</span></label>' +
+        '<div class="seg-line" style="margin-top:4px">' +
+          types.map(t => '<button class="chip ' + (t === curType ? 'on' : '') + '" data-act="newtype" data-v="' + t + '">' + t + '</button>').join('') +
+        '</div><div class="hint">用于筛选统计（3.2），新建默认「商旅分销」</div></div>' +
+      '<div class="field"><label>产品线</label>' +
+        '<div class="seg-line" style="margin-top:4px">' +
+          linesAll.map(l => '<button class="chip ' + (curLines.indexOf(l) >= 0 ? 'on' : '') + '" data-act="newline" data-v="' + l + '">' + l + '</button>').join('') +
+        '</div><div class="hint">可多选；仅描述用途，不联动产品库（3.3）</div></div>' +
+      '<div class="field"><label>合作状态</label>' +
+        '<div class="seg-line" style="margin-top:4px">' +
+          statuses.map(s => '<button class="chip ' + (s === curStatus ? 'on' : '') + '" data-act="newstatus" data-v="' + s + '">' + s + '</button>').join('') +
+        '</div><div class="hint">新建默认「潜在」；变更会写入跟进时间轴</div></div>' +
+      '<div class="field"><label>合作分级</label>' +
+        '<div class="seg-line" style="margin-top:4px">' +
+          levels.map(l => '<button class="chip ' + (l === curLevel ? 'on' : '') + '" data-act="newlevel" data-level="' + l + '">' + l + '</button>').join('') +
+        '</div></div>' +
+      '<div class="field"><label>归属销售</label><input value="王磊（我）" readonly style="color:#5A6A85"></div>' +
+      '<div class="field"><label>协作人</label><input placeholder="选择同事，可留空"></div>' +
+      '<div class="field"><label>备注</label><textarea id="n-desc" placeholder="一句话说明这家公司做什么、怎么合作">' + v('n-desc') + '</textarea></div>' +
+      '<div class="hint" style="padding:4px 0 0">法定代表人、注册资本、开票信息在「编辑合作商」里补（2.3 / 2.4）；供应标签的合作商会多出「资源方信息」区块（4.x）</div>' +
+    '</div>' +
+    '<div class="tiny" style="padding:6px 20px 20px">保存后会走查重：同名或同信用代码会提示合并（2.9）。</div>';
+}
+function screenDiscover(){
+  const seg = S.leadSeg || 'pool';
+  const poolN = DB.pool.length, leadN = DB.leads.length, dealN = DB.deals.length;
+  const segs = '<div class="segs" style="margin:12px 14px 0">' +
+    '<button class="' + (seg === 'pool' ? 'on' : '') + '" data-act="seg" data-seg="pool">待确认 ' + poolN + '</button>' +
+    '<button class="' + (seg === 'mine' ? 'on' : '') + '" data-act="seg" data-seg="mine">我的发现 ' + leadN + '</button>' +
+    '<button class="' + (seg === 'deals' ? 'on' : '') + '" data-act="seg" data-seg="deals">商机 ' + dealN + '</button></div>';
+
+  let body = '';
+  if (seg === 'pool'){
+    body = '<div class="banner"><span class="bl">自动采集</span><span>今日 08:00 运行完成，新增 ' + poolN +
+        ' 条进待确认池；渠道在「我的 → 采集渠道配置」里调整。</span></div>' +
+      '<div class="pad">' +
+      (DB.pool.length ? DB.pool.map(p =>
+        '<div class="card" style="padding:13px 14px;margin-bottom:10px">' +
+          '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:14px;font-weight:700;line-height:1.35">' + esc(p.name) + '</div>' +
+          '<span class="pill">' + esc(p.channel) + '</span></div>' +
+          '<div class="tiny" style="margin-top:5px">' + esc(p.detail) + '</div>' +
+          '<div style="font-size:12px;color:#5A6A85;margin-top:7px;line-height:1.55">' + esc(p.snippet) + '</div>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px">' +
+            '<span class="tiny">' + esc(p.city) + ' · 采集于 ' + esc(p.found) + '</span>' +
+            '<span style="display:flex;gap:7px">' +
+              '<button class="btn line small" data-act="discard" data-id="' + p.id + '">丢弃</button>' +
+              '<button class="btn primary small" data-act="claim" data-id="' + p.id + '">认领</button>' +
+            '</span></div></div>').join('')
+        : '<div class="card" style="padding:34px;text-align:center"><div class="tiny">待确认线索已清空</div>' +
+          '<button class="btn ghost small" style="margin-top:12px" data-act="go" data-to="channels">去采集一次</button></div>') +
+      '</div>';
+  }
+  if (seg === 'mine'){
+    body = '<div class="pad" style="padding-top:14px"><div class="list">' +
+      (DB.leads.map(l =>
+        '<div class="row" data-act="toast" data-msg="转为合作商：' + l.name + '（11.4）">' +
+          '<div class="avatar">' + initials(l.name) + '</div>' +
+          '<div class="main"><div class="t">' + esc(l.name) + '</div>' +
+          '<div class="s">' + l.src + ' · ' + esc(l.city) + ' · ' + esc(l.contact) + ' ' + esc(l.phone) + '</div></div>' +
+          '<span class="pill ' + (l.status === '待跟进' ? 'amber' : 'green') + '">' + l.status + '</span></div>').join('')) +
+      '</div>' +
+      '<button class="btn primary" style="width:100%;margin-top:14px" data-act="toast" data-msg="发现登记（11.1）：企业名、联系人、电话、来源、需求，30 秒录完">+ 登记新发现</button>' +
+      '<div class="tiny" style="text-align:center;margin-top:12px">来源字典可在「我的 → 标签管理」同层维护（11.2）</div></div>';
+  }
+  if (seg === 'deals'){
+    body = '<div class="pad" style="padding-top:14px">' +
+      DB.deals.map(d => dealCard(d)).join('') +
+      '<div class="tiny" style="text-align:center;margin-top:4px">点击进入商机，可推进阶段（11.6）</div></div>';
+  }
+
+  /* 待跟进入口（PRD 12.9）：今天 / 逾期各自计数，点进去是独立列表页 */
+  let todoToday = 0, todoLate = 0;
+  Object.keys(DB.plans).forEach(id => {
+    if (!DB.plans[id]) return;
+    const g = dayGap(DB.plans[id].date);
+    if (g === 0) todoToday++; else if (g < 0) todoLate++;
+  });
+  const todoLink = '<div class="todolink" data-act="go" data-to="todo">' +
+      '<span><b>待跟进</b>　今天 ' + todoToday + ' · 逾期 ' + todoLate + '</span>' +
+      '<span class="todolink-go">查看' + arrow + '</span></div>';
+
+  return navBack('发现', '') + segs + todoLink + body;
+}
+function screenChannels(){
+  const cards = DB.channels.map(ch => {
+    const kv = (k, v, style) => '<div class="kv" style="border:0;padding:4px 0;gap:12px">' +
+      '<b style="flex:none">' + k + '</b><span style="font-weight:500;color:#3A465C;text-align:right;' + (style || '') + '">' + esc(v) + '</span></div>';
+    return '<div class="card" style="padding:13px 14px;margin-bottom:10px;cursor:pointer" data-act="ch-edit" data-id="' + ch.id + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+        '<div><div style="font-size:14.5px;font-weight:700">' + esc(ch.name) + '</div>' +
+        '<div class="tiny" style="margin-top:3px">' + esc(ch.type) + '</div></div>' +
+        '<button data-act="ch" data-id="' + ch.id + '" style="width:46px;height:27px;border-radius:99px;border:0;cursor:pointer;' +
+          'background:' + (ch.on ? '#2E7D4F' : '#DDE2EA') + ';position:relative;flex:none">' +
+          '<span style="position:absolute;top:3px;left:' + (ch.on ? '22px' : '3px') + ';width:21px;height:21px;border-radius:50%;' +
+          'background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.18s"></span></button></div>' +
+      '<div style="margin-top:8px">' +
+        kv('地址', ch.url, 'max-width:66%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap') +
+        kv('关键词', ch.kw) +
+        kv('频率', ch.freq) +
+        kv('范围', ch.scope) +
+      '</div>' +
+      '<div class="tiny" style="margin-top:6px;border-top:1px solid #F1F3F7;padding-top:8px">上次 ' + ch.last + ' · 累计 ' + ch.hit + ' 条</div>' +
+    '</div>';
+  }).join('');
+
+  return navBack('采集渠道配置', '<button class="iconbtn" data-act="ch-new">' + plusSvg + '</button>') +
+    '<div class="banner"><span class="bl">自动采集</span><span>每个渠道可单独配置名称、地址、关键词、频率与范围；到点抓取，去重后进待确认线索池（5.3 / 5.4）。</span></div>' +
+    '<div class="pad" style="padding-top:12px">' + cards +
+      '<button class="btn primary" style="width:100%;margin-top:6px" data-act="collect" id="collectBtn">立即采集一次</button>' +
+      '<div class="tiny" style="text-align:center;margin-top:12px;line-height:1.6">点卡片可修改该渠道配置；右上「＋」新增渠道；<br>首版建议只接 2–3 个固定渠道，规则化解析。</div>' +
+    '</div>';
+}
+
+function screenDeal(id){
+  const d = dealOf(id) || DB.deals[0];
+  const c = comp(d.cid);
+  const stages = ['接洽','试单','报价','签约','赢单'];
+  const pct = Math.min(100, d.stage / 4 * 100);
+  const bar = '<div class="stagebar"><div class="line"><i style="width:'+pct+'%"></i></div>'+
+    stages.map((s,i) => '<div class="sp '+(i<d.stage?'done':(i===d.stage?'cur':''))+'"><div class="n">'+(i+1)+'</div>'+s+'</div>').join('')+
+    '</div>';
+  const lost = d.stage >= 4 && d.lost;
+  return navBack('商机详情', '<button class="iconbtn" data-act="toast" data-msg="编辑商机（11.5）"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20h4l10-10-4-4L4 16v4Z"/></svg></button>')+
+    '<div class="pad" style="padding-top:14px">'+
+      '<div style="font-size:18px;font-weight:800;line-height:1.35">'+esc(d.title)+'</div>'+
+      '<div class="tiny" style="margin-top:6px" data-act="go" data-to="company" data-id="'+c.id+'">'+esc(c.name)+' ›</div>'+
+      '<div class="card" style="margin-top:12px;padding:6px 14px">'+bar+'</div>'+
+      '<div class="card" style="margin-top:12px;padding:6px 14px"><div class="info" style="padding:0">'+
+        '<div class="ri"><b>预计间夜</b><span>'+num(d.nights)+' 间夜 / 年</span></div>'+
+        '<div class="ri"><b>预计 GMV</b><span>¥'+money(d.gmv)+'</span></div>'+
+        '<div class="ri"><b>预计成交</b><span>'+d.expect+'</span></div>'+
+        '<div class="ri"><b>负责人</b><span>'+esc(d.owner)+'</span></div>'+
+      '</div></div>'+
+      '<div class="sec">阶段说明</div>'+
+      '<div class="card" style="padding:13px 14px;font-size:13px;line-height:1.65;color:#3A465C">'+esc(d.note)+'</div>'+
+      '<div class="sec">关联跟进（'+((DB.follows[c.id]||[]).length)+'）</div>'+
+      '<div class="card"><div class="tl" style="padding-top:14px">'+
+        ((DB.follows[c.id]||[]).slice(0,2).map((f,i)=>followItem(f,i===0)).join('') || '<div class="empty">暂无</div>')+
+      '</div></div>'+
+      '<div class="tiny" style="text-align:center;margin-top:12px;padding-bottom:6px">阶段停留超 7 天会提醒负责人（11.9）</div>'+
+    '</div>'+
+    '<div class="actionbar">'+
+      '<button class="btn line" data-act="lose" data-id="'+d.id+'" style="flex:.7">标记输单</button>'+
+      '<button class="btn primary" data-act="advance" data-id="'+d.id+'">'+(d.stage>=4?'已赢单':'推进到「'+stages[d.stage+1]+'」')+'</button></div>';
+}
+
+/* ---- 待跟进列表：今天要跟进 / 已逾期（PRD 12.9） ---- */
+function screenTodo(){
+  const ids = Object.keys(DB.plans).filter(id => DB.plans[id]);
+  const all = ids.map(id => ({c: comp(id), plan: DB.plans[id], gap: dayGap(DB.plans[id].date)}))
+                 .filter(x => x.c);
+  /* 逾期按日期从早到晚：越早逾期越紧急；今天按名称 */
+  const overdue = all.filter(x => x.gap < 0).sort((a, b) => a.plan.date.localeCompare(b.plan.date) || a.c.name.localeCompare(b.c.name));
+  const today = all.filter(x => x.gap === 0).sort((a, b) => a.c.name.localeCompare(b.c.name));
+
+  const row = x => {
+    const phone = (x.c.contacts && x.c.contacts[0]) ? x.c.contacts[0].p : '';
+    return '<div class="todoi" data-act="go" data-to="company" data-id="' + x.c.id + '" data-tab="跟进">' +
+      '<div class="todoi-main">' +
+        '<div class="todoi-n">' + esc(x.c.name) + '</div>' +
+        '<div class="todoi-m">' + planShort(x.plan.date) + ' · ' + planTag(x.plan) + '</div>' +
+        '<div class="todoi-t">' + esc(x.plan.note) + '</div>' +
+      '</div>' +
+      '<button class="todoi-call" data-act="call" data-phone="' + phone + '" data-name="' + esc(x.c.short) + '">拨打</button>' +
+    '</div>';
+  };
+
+  const sec = (title, list, cls) =>
+    '<div class="todosec ' + cls + '">' +
+      '<div class="todosec-h">' + title + '<span class="todosec-n">' + list.length + '</span></div>' +
+      (list.length ? list.map(row).join('') : '<div class="todoempty">没有需要处理的记录</div>') +
+    '</div>';
+
+  return navBack('待跟进', '') +
+    '<div class="todobar">今天是 ' + planShort(TODAY) + '，共 ' + all.length + ' 家有跟进计划</div>' +
+    sec('今天要跟进', today, 'is-today') +
+    sec('已逾期', overdue, 'is-late') +
+    '<div class="tiny" style="text-align:center;padding:16px 20px 22px;line-height:1.7">' +
+      '排序只看计划时间，与商机大小无关；点「拨打」取主联系人电话<br>' +
+      '标记完成后该企业会掉到首页最后，需要补下一条计划</div>';
+}
+
+function screenFollow(){
+  const c = comp(S.followCompany || 'c1');
+  const ed = S.editFollow || null;
+  const editing = !!(ed && ed.cid === c.id && (DB.follows[c.id] || [])[ed.idx]);
+  const origin = editing ? DB.follows[c.id][ed.idx] : null;
+  const types = ['电话','拜访','微信','邮件'];
+  const nexts = ['明天','3 天后','下周一'];
+  const vt = editing ? origin.type : (S.followType || '电话');
+  const vn = S.followNext || '3 天后';
+  const dl = DB.deals.find(d => d.cid === c.id);
+  const textVal = editing ? origin.text : (S.draft['f-text'] || '');
+
+  return navBack(editing ? '编辑跟进' : '记跟进',
+      '<button class="btn primary small" data-act="save-follow">保存</button>')+
+    '<div class="card" style="margin:12px 14px 0;padding:11px 14px;display:flex;justify-content:space-between;align-items:center">'+
+      '<div><div style="font-size:13.5px;font-weight:600">'+esc(c.name)+'</div>'+
+      '<div class="tiny" style="margin-top:3px">关联商机：'+ (dl ? esc(dl.title) : '无') +'</div></div>'+
+      '<span class="pill blue">已关联</span></div>'+
+    (editing
+      ? '<div class="card" style="margin:10px 14px 0;padding:10px 13px;background:#FFF3DC;border:1px solid #F0DDB0">'+
+          '<div class="tiny" style="color:#9A6400;line-height:1.6">编辑原记录 '+origin.date+' · '+origin.type+
+          '。作者本人 24 小时内可改，超时只能由管理员修改；改内容不影响「下次跟进计划」。</div></div>'
+      : '')+
+    '<div class="pad" style="padding-top:12px">'+
+      '<div class="tiny" style="margin-bottom:7px">跟进方式</div>'+
+      '<div class="seg-line">'+types.map(t => '<button class="chip '+(t===vt?'on':'')+'" data-act="vtype" data-v="'+t+'">'+t+'</button>').join('')+'</div>'+
+      '<div style="margin-top:14px"><textarea id="f-text" placeholder="聊了什么？客户的关注点、异议、下一步…">'+esc(textVal)+'</textarea></div>'+
+      '<div class="tiny" style="padding:10px 2px 0">'+
+        (editing ? '原记录时间：'+origin.date+'（不可改）' : '自动记录：11-20 14:32')+
+        '　·　本期仅支持文字记录（语音、照片在二期）</div>'+
+      (editing
+        ? '<div class="tiny" style="padding:14px 2px 0;line-height:1.6">编辑模式不改「下次跟进」——'+
+            '改计划请回档案页用「修改」按钮，避免手滑把排序改了。</div>'
+        : '<div style="padding:16px 0 0"><div class="tiny" style="margin-bottom:7px">下次跟进 <span style="color:#C0392B">*</span></div>'+
+            '<div class="seg-line">'+nexts.map(n => '<button class="chip '+(n===vn?'on':'')+'" data-act="vnext" data-v="'+n+'">'+n+'</button>').join('')+'</div></div>')+
+      '<div class="card" style="margin-top:14px;padding:0 14px"><div class="info" style="padding:0">'+
+        '<div class="ri"><b>提醒方式</b><span>推送 · 到期当天 09:00</span></div>'+
+        '<div class="ri"><b>可见范围</b><span>归属人、协作人、主管</span></div></div></div>'+
+      '<div class="tiny" style="text-align:center;padding:14px 0 20px">'+
+        (editing ? '保存后只更新这条记录的内容' : '保存后写入合作商时间轴，并把「下次跟进计划」覆盖为所选日期')+'</div>'+
+    '</div>';
+}
+function screenMine(){
+  const ic = (d, color) => '<span class="mi" style="color:' + color + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg></span>';
+  const row = (icon, label, extra, act) =>
+    '<div class="mine-row" data-act="' + act + '">' + icon + '<span class="ml">' + label + '</span>' +
+    (extra ? '<span class="mv">' + extra + '</span>' : '') +
+    '<span style="color:#C6CCD6;display:flex">' + arrow + '</span></div>';
+
+  const broadcast = '<circle cx="12" cy="12" r="2.2"/><path d="M8.4 8.4a5.2 5.2 0 0 0 0 7.2M15.6 8.4a5.2 5.2 0 0 1 0 7.2M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/>';
+  const gear = '<circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4"/>';
+  const tagIcon = '<path d="M11 3.5H4.5v6.5l9 9 6.5-6.5-9-9Z"/><circle cx="8" cy="7" r="1.2"/>';
+  const lock = '<rect x="4.5" y="10.5" width="15" height="10" rx="2.4"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5"/>';
+  const info = '<circle cx="12" cy="12" r="8.2"/><path d="M12 11v5.5M12 7.8v1.4"/>';
+  const chat = '<path d="M4.5 6.5h15v9h-9l-4 3v-3h-2z" stroke-linejoin="round"/>';
+  const cog = '<path d="M4 7.5h9M17 7.5h3M4 16.5h3M11 16.5h9"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/>';
+
+  return '<div class="mine-head">' +
+      '<div class="av">王</div>' +
+      '<div style="flex:1"><div class="nm">王磊</div>' +
+      '<div class="id">工号 1002 · 商旅分销部 · 销售</div></div>' +
+      '<span style="color:#B9C1CF;display:flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2.5v2.5H14zM18 18h2v2h-2z"/></svg></span>' +
+    '</div>' +
+    '<div class="mine-card">' +
+      row(ic(broadcast, '#2E7D4F'), '采集渠道配置', '4 个 · 3 开启', 'go-channels') +
+      row(ic(tagIcon, '#2F6FD0'), '标签管理', DB.tags.length + ' 个', 'tags') +
+      row(ic(tagIcon, '#7F77DD'), '来源字典', DB.sources.length + ' 个', 'sources') +
+      row(ic(lock, '#8A5A20'), '数据与安全', '', 'toast') +
+    '</div>' +
+    '<div class="mine-card">' +
+      row(ic(info, '#6B7280'), '版本信息', 'V1.14', 'toast') +
+      row(ic(chat, '#6B7280'), '帮助与反馈', '', 'toast') +
+      row(ic(cog, '#6B7280'), '设置', '', 'toast') +
+    '</div>' +
+    '<div class="mine-card" style="margin-top:10px">' +
+      '<div class="mine-row" data-act="logout" style="justify-content:center;color:#C0392B">退出登录</div>' +
+    '</div>' +
+    '<div class="tiny" style="text-align:center;padding:18px 0 10px">商旅分销内部 CRM · 一期原型</div>';
+}
+const SCREENS = {
+  login:screenLogin,
+  partners:screenPartners,
+  company:()=>screenCompany(S.param || 'c1'),
+  companyNew:screenCompanyNew,
+  discover:screenDiscover,
+  channels:screenChannels,
+  deal:()=>screenDeal(S.param || 'd1'),
+  follow:screenFollow,
+  todo:screenTodo,
+  mine:screenMine
+};
+
+/* ============================================================ 渲染 */
+function applyFilter(kw){
+  kw = (kw || '').trim().toLowerCase();
+  document.querySelectorAll('#bizList .row').forEach(r => {
+    const t = (r.dataset.text || '').toLowerCase();
+    r.style.display = (!kw || t.indexOf(kw) >= 0) ? '' : 'none';
+  });
+  const cnt = document.getElementById ? document.getElementById('listCount') : null;
+  if (cnt){
+    const rows = document.querySelectorAll('#bizList .row');
+    let n = 0;
+    rows.forEach(r => { if (r.style.display !== 'none') n++; });
+    cnt.textContent = kw ? ('筛选出 ' + n + ' 家') : ('共 ' + n + ' 家合作商');
+  }
+  document.querySelectorAll('.pad > .card[data-text]').forEach(r => {
+    const t = (r.dataset.text || '').toLowerCase();
+    r.style.display = (!kw || t.indexOf(kw) >= 0) ? '' : 'none';
+  });
+}
+function render(){
+  document.querySelectorAll('.mask').forEach(m => m.remove());
+  const fn = SCREENS[S.screen] || SCREENS.partners;
+  view.innerHTML = fn();
+  renderTabbar();
+  renderRail();
+  renderMeta();
+  if (S.modal === 'lose') $('#app').insertAdjacentHTML('beforeend', loseSheet());
+  if (S.modal === 'tags') $('#app').insertAdjacentHTML('beforeend', tagsSheet());
+  if (S.modal === 'channel') $('#app').insertAdjacentHTML('beforeend', channelSheet());
+  if (S.modal === 'plan') $('#app').insertAdjacentHTML('beforeend', planSheet());
+  if (S.modal === 'sources') $('#app').insertAdjacentHTML('beforeend', sourcesSheet());
+  if (S.modal === 'followAct') $('#app').insertAdjacentHTML('beforeend', followActSheet());
+  if (S.modal === 'status') $('#app').insertAdjacentHTML('beforeend', statusSheet());
+  const q = $('#q');
+  if (q){
+    q.addEventListener('input', e => { S.q = e.target.value; applyFilter(S.q); });
+    if (S.q) applyFilter(S.q);
+    if (S.searching && q.focus) q.focus();
+  }
+}
+function renderTabbar(){
+  const show = ['partners','discover','mine'].indexOf(S.screen) >= 0;
+  tabbar.style.display = show ? 'flex' : 'none';
+  if (!show) return;
+  tabbar.innerHTML = TABS.map(t =>
+    '<button class="'+(S.screen===t.sc?'on':'')+'" data-act="tab" data-tab="'+t.sc+'">'+t.svg+'<span>'+t.label+'</span></button>').join('');
+}
+function renderRail(){
+  const groups = [];
+  NAV.forEach(n => { if (n.g) groups.push({g:n.g, items:[]}); else groups[groups.length-1].items.push(n); });
+  $('#railLeft').innerHTML = '<div class="rail-title">页面索引</div>' + groups.map(gr =>
+    '<div class="rail-group">'+gr.g+'</div>' + gr.items.map(it => {
+      const on = S.screen === it.sc && (S.param || null) === (it.pm || null);
+      return '<button class="rail-item '+(on?'on':'')+'" data-act="jump" data-sc="'+it.sc+'" data-pm="'+(it.pm||'')+'">'+
+        '<span>'+it.label+'</span><span class="rq">'+it.req+'</span></button>';
+    }).join('')
+  ).join('');
+}
+function renderMeta(){
+  const m = META[S.screen] || META.partners;
+  $('#railRight').innerHTML = '<div class="rail-title">本屏对应的需求</div>'+
+    '<div class="card" style="padding:14px;border-radius:14px">'+
+      '<div style="font-size:14px;font-weight:800;color:#1F3864">'+m.t+'</div>'+
+      '<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">'+
+        m.rq.map(r => '<span class="pill blue" style="align-self:flex-start;font-weight:500">'+r+'</span>').join('')+
+      '</div>'+
+      '<div style="height:1px;background:#EFF1F6;margin:12px 0"></div>'+
+      '<div class="tiny" style="line-height:1.65">'+m.tip+'</div>'+
+    '</div>'+
+    '<div class="rail-title" style="margin-top:16px">怎么用这份原型</div>'+
+    '<div class="card" style="padding:13px 14px;border-radius:14px">'+
+      '<div class="tiny" style="line-height:1.75">① 左侧点页面跳转<br>② 卡片 / 按钮都能点<br>③ 右侧是本屏对应的需求编号<br>④ 手机模式下面板自动隐藏，可直接演示</div>'+
+    '</div>';
+}
+function planSheet(){
+  const d = S.planDraft || {date:'2026-11-23', note:''};
+  let opts = [['2026-11-21','明天'], ['2026-11-23','3 天后'], ['2026-11-27','下周五'], ['2026-12-01','下周一']];
+  if (!opts.some(o => o[0] === d.date)) opts = [[d.date, '当前']].concat(opts);
+  return '<div class="mask" data-act="close-modal2"><div class="sheet" data-act="noop">' +
+    '<h4>' + (S.planEdit ? '修改跟进计划' : '新增跟进计划') + '</h4>' +
+    '<p>每家至少一条；首页按最新一条的时间排序</p>' +
+    '<div class="field" style="border-bottom:0"><label>计划时间</label>' +
+      '<div class="seg-line" style="margin-top:6px">' +
+        opts.map(o => '<button class="chip ' + (d.date === o[0] ? 'on' : '') + '" data-act="plan-date" data-v="' + o[0] + '">' + o[1] + ' · ' + o[0].slice(5) + '</button>').join('') +
+      '</div></div>' +
+    '<div class="field"><label>跟进事项</label>' +
+      '<input id="plan-note" placeholder="下次要做什么，如：给 2027 年报价" value="' + esc(d.note || '') + '"></div>' +
+    '<div style="display:flex;gap:9px;margin-top:16px">' +
+      '<button class="btn primary" data-act="plan-save">保存</button></div>' +
+    '</div></div>';
+}
+
+function channelSheet(){
+  const d = S.chDraft || {};
+  const freqs = ['每日 08:00','每周一 08:00','每月 1 日','手动'];
+  const field = (id, label, ph, val, style) =>
+    '<div class="field"' + (style || '') + '><label>' + label + '</label>' +
+    '<input id="' + id + '" placeholder="' + ph + '" value="' + esc(val || '') + '"></div>';
+  return '<div class="mask" data-act="close-modal2"><div class="sheet" data-act="noop">' +
+    '<h4>' + (S.chEdit ? '编辑渠道' : '新增渠道') + '</h4>' +
+    '<p>名称、地址、关键词、频率、范围都可配置</p>' +
+    field('ch-name', '渠道名称', '如 展会名录 / 招标网', d.name) +
+    field('ch-url', '地址', '网址，或公众号 / 名录来源', d.url) +
+    field('ch-kw', '关键词', '多个关键词用空格分隔', d.kw) +
+    '<div class="field" style="border-bottom:0"><label>抓取频率</label>' +
+      '<div class="seg-line" style="margin-top:5px">' +
+        freqs.map(f => '<button class="chip ' + (d.freq === f ? 'on' : '') + '" data-act="ch-freq" data-v="' + f + '">' + f + '</button>').join('') +
+      '</div></div>' +
+    field('ch-scope', '范围', '城市或区域，如 全国 / 华东、华南', d.scope) +
+    '<div style="display:flex;gap:9px;margin-top:18px">' +
+      (S.chEdit ? '<button class="btn line" data-act="ch-del" style="flex:.72">删除</button>' : '') +
+      '<button class="btn primary" data-act="ch-save">保存</button></div>' +
+    '</div></div>';
+}
+
+function tagsSheet(){
+  const rows = DB.tags.map((t, i) =>
+    '<div class="tagrow"><input data-tag-i="' + i + '" value="' + esc(t) + '">' +
+    '<button class="del" data-act="tag-del" data-i="' + i + '">×</button></div>').join('');
+  return '<div class="mask" data-act="close-modal"><div class="sheet" data-act="noop">' +
+    '<h4>标签管理</h4><p>默认三个，可增删改；列表按标签筛选，一家可打多个标签</p>' +
+    rows +
+    '<div class="tagrow" style="border-bottom:0;margin-top:4px">' +
+      '<input id="newTag" placeholder="新增标签，如 同业 / 渠道 / 直客">' +
+      '<button class="btn primary small" data-act="tag-add">添加</button></div>' +
+    '<button class="btn ghost" style="width:100%;margin-top:14px" data-act="close-modal2">完成</button>' +
+    '</div></div>';
+}
+
+function loseSheet(){
+  const rs = ['价格','资源覆盖','关系','需求变更','暂无预算'];
+  return '<div class="mask" data-act="close-modal"><div class="sheet">'+
+    '<h4>标记输单，请选择原因</h4><p>原因是必填项，用于复盘（11.7）</p>'+
+    '<div class="opt">'+rs.map((r,i) => '<button class="'+(i===0&&!S.loseReason?'on':'')+'" data-act="pick-lose" data-r="'+r+'">'+r+'</button>').join('')+'</div>'+
+    '<button class="btn primary" style="width:100%" data-act="confirm-lose">确认输单</button></div></div>';
+}
+
+/* ---- 来源字典（PRD 11.2）：与标签管理同一套交互，独立字典 ---- */
+function sourcesSheet(){
+  const rows = DB.sources.map((t, i) =>
+    '<div class="tagrow"><input data-src-i="' + i + '" value="' + esc(t) + '">' +
+    '<button class="del" data-act="src-del" data-i="' + i + '">×</button></div>').join('');
+  return '<div class="mask" data-act="close-modal"><div class="sheet" data-act="noop">' +
+    '<h4>来源字典</h4><p>发现登记的来源选项，可增删改；改名会同步到已有发现记录</p>' +
+    rows +
+    '<div class="tagrow" style="border-bottom:0;margin-top:4px">' +
+      '<input id="newSrc" placeholder="新增来源，如 老客户推荐 / 行业协会">' +
+      '<button class="btn primary small" data-act="src-add">添加</button></div>' +
+    '<button class="btn ghost" style="width:100%;margin-top:14px" data-act="close-modal2">完成</button>' +
+    '</div></div>';
+}
+
+/* ---- 跟进记录操作菜单（编辑 / 删除） ---- */
+function followActSheet(){
+  const t = S.actTarget || {};
+  const arr = DB.follows[t.cid] || [];
+  const f = arr[t.i];
+  return '<div class="mask" data-act="close-modal"><div class="sheet" data-act="noop">' +
+    '<h4>这条跟进</h4><p>' + (f ? (f.date + ' · ' + f.type + ' · ' + esc(f.by)) : '') + '</p>' +
+    '<div class="opt2">' +
+      '<button data-act="follow-edit">编辑内容<span>24 小时内本人可改</span></button>' +
+      '<button data-act="follow-del" class="danger">删除<span>软删，时间轴保留占位</span></button>' +
+    '</div>' +
+    '<button class="btn ghost" style="width:100%;margin-top:10px" data-act="close-modal2">取消</button>' +
+    '</div></div>';
+}
+
+/* ---- 合作状态流转（决策 4：不单独做屏，档案页弹层切换） ---- */
+function statusSheet(){
+  const c = comp(S.statusTarget || S.param || 'c1');
+  const list = ['潜在','试单','合作中','暂停','流失'];
+  return '<div class="mask" data-act="close-modal"><div class="sheet" data-act="noop">' +
+    '<h4>变更合作状态</h4><p>允许任意方向跳转；每次变更会生成一条系统跟进写入时间轴</p>' +
+    '<div class="opt">' + list.map(s =>
+      '<button class="' + (c && c.status === s ? 'on' : '') + '" data-act="pick-status" data-s="' + s + '">' + s + '</button>'
+    ).join('') + '</div>' +
+    '<button class="btn ghost" style="width:100%;margin-top:8px" data-act="close-modal2">取消</button>' +
+    '</div></div>';
+}
+
+/* ============================================================ 事件 */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+
+  if (act === 'jump'){ go(el.dataset.sc, el.dataset.pm || null); return; }
+  if (act === 'back'){ back(); return; }
+  if (act === 'tab'){ S.hist = []; go(el.dataset.tab); return; }
+  if (act === 'go'){
+    go(el.dataset.to, el.dataset.id || null);
+    /* 从待跟进列表点进来要直接停在「跟进」页签，而不是默认的概览 */
+    if (el.dataset.tab){ S.ctab = el.dataset.tab; render(); }
+    return;
+  }
+  if (act === 'ctab'){ S.ctab = el.dataset.tab; render(); return; }
+  if (act === 'seg'){ S.leadSeg = el.dataset.seg; render(); return; }
+  if (act === 'chip'){ S.filters[el.dataset.group] = el.dataset.value; render(); return; }
+  if (act === 'toast'){ toast(el.dataset.msg || '原型演示'); return; }
+  if (act === 'call'){
+    /* 取主联系人电话，调系统拨号；原型只提示 */
+    toast('正在拨打 ' + (el.dataset.name || '') + ' ' + (el.dataset.phone || ''));
+    return;
+  }
+  if (act === 'noop'){ return; }
+  if (act === 'search'){ S.searching = true; render(); return; }
+  if (act === 'cancel-search'){ S.searching = false; S.q = ''; render(); return; }
+
+  if (act === 'code'){
+    if (S.codeTimer) return;
+    let n = 60;
+    el.textContent = n + 's';
+    S.codeTimer = setInterval(() => {
+      n--;
+      if (n <= 0){ clearInterval(S.codeTimer); S.codeTimer = null; el.textContent = '获取验证码'; }
+      else el.textContent = n + 's';
+    }, 1000);
+    toast('验证码已发送（原型不真发短信）');
+    return;
+  }
+  if (act === 'login'){
+    S.hist = [];
+    toast('登录成功，欢迎回来');
+    go('partners');
+    return;
+  }
+  if (act === 'logout'){ S.hist = []; go('login'); toast('已退出登录'); return; }
+
+  if (act === 'claim'){
+    const idx = DB.pool.findIndex(p => p.id === el.dataset.id);
+    if (idx >= 0){
+      const p = DB.pool.splice(idx,1)[0];
+      DB.leads.unshift({id:'l'+Date.now(), name:p.name, src:p.channel, contact:'待补充', phone:'待补充',
+        status:'待跟进', city:p.city, owner:DB.me.name, created:'11-20'});
+      toast('已认领，转入「我的发现」，可继续跟进');
+      render();
+    }
+    return;
+  }
+  if (act === 'discard'){
+    DB.pool = DB.pool.filter(p => p.id !== el.dataset.id);
+    toast('已丢弃，30 天内可在回收站找回');
+    render();
+    return;
+  }
+  if (act === 'ch'){
+    const ch = DB.channels.find(c => c.id === el.dataset.id);
+    if (ch){ ch.on = !ch.on; render(); toast(ch.name + (ch.on ? ' 已开启' : ' 已暂停')); }
+    return;
+  }
+  if (act === 'plan-new'){
+    S.planTarget = el.dataset.id; S.planEdit = false;
+    S.planDraft = {date:'2026-11-23', note:''};
+    S.modal = 'plan'; render(); return;
+  }
+  if (act === 'plan-edit'){
+    const c0 = comp(el.dataset.id), p0 = planOf(el.dataset.id);
+    S.planTarget = el.dataset.id; S.planEdit = true;
+    S.planDraft = p0 ? {date:p0.date, note:p0.note} : {date:'2026-11-23', note:''};
+    S.modal = 'plan'; render(); return;
+  }
+  if (act === 'plan-date'){ S.planDraft.date = el.dataset.v; render(); return; }
+  if (act === 'plan-save'){
+    const d = S.planDraft || {};
+    const inp = $('#plan-note');
+    const note = (inp ? inp.value.trim() : '') || d.note || '';
+    const id = S.planTarget;
+    if (!note){ toast('请填写跟进事项'); return; }
+    const item = {date:d.date || '2026-11-23', note:note, by:DB.me.name};
+    DB.plans[id] = item;
+    S.modal = null; S.planDraft = null; S.planEdit = false;
+    render(); toast('已保存跟进计划：' + planShort(item.date) + ' · ' + note);
+    return;
+  }
+  if (act === 'plan-done'){
+    const id = el.dataset.id;
+    DB.plans[id] = null;
+    render();
+    toast('已标记完成，该合作商暂无计划（会排到首页最后），请补充下一条');
+    return;
+  }
+  if (act === 'ch-new'){
+    S.chEdit = null;
+    S.chDraft = {name:'', url:'', kw:'', freq:'每日 08:00', scope:'全国'};
+    S.modal = 'channel'; render(); return;
+  }
+  if (act === 'ch-edit'){
+    const ch = DB.channels.find(c => c.id === el.dataset.id);
+    if (!ch) return;
+    S.chEdit = ch.id;
+    S.chDraft = {name:ch.name, url:ch.url, kw:ch.kw, freq:ch.freq, scope:ch.scope};
+    S.modal = 'channel'; render(); return;
+  }
+  if (act === 'ch-freq'){ S.chDraft.freq = el.dataset.v; render(); return; }
+  if (act === 'ch-save'){
+    const d = S.chDraft || {};
+    const g = id => { const e = $('#' + id); return e ? e.value.trim() : ''; };
+    const name = g('ch-name') || d.name || '';
+    if (!name){ toast('请填写渠道名称'); return; }
+    const payload = {name:name, url:g('ch-url') || d.url || '', kw:g('ch-kw') || d.kw || '',
+      freq:d.freq || '每日 08:00', scope:g('ch-scope') || d.scope || '全国'};
+    if (S.chEdit){
+      const ch = DB.channels.find(c => c.id === S.chEdit);
+      if (ch) Object.assign(ch, payload);
+      toast('已保存「' + name + '」的配置');
+    } else {
+      DB.channels.push({id:'ch' + Date.now(), type:'自定义', on:true, last:'—', hit:0, ...payload});
+      toast('已新增渠道「' + name + '」');
+    }
+    S.modal = null; S.chDraft = null; S.chEdit = null; render(); return;
+  }
+  if (act === 'ch-del'){
+    const ch = DB.channels.find(c => c.id === S.chEdit);
+    DB.channels = DB.channels.filter(c => c.id !== S.chEdit);
+    S.modal = null; S.chDraft = null; S.chEdit = null; render();
+    toast('已删除渠道' + (ch ? '「' + ch.name + '」' : ''));
+    return;
+  }
+  if (act === 'collect'){
+    if (el.disabled) return;
+    el.disabled = true; el.textContent = '采集中…（模拟 1.2 秒）';
+    setTimeout(() => {
+      DB.pool.unshift({id:'p'+Date.now(), name:'杭州云途商旅（新增）', channel:'招标网',
+        detail:'某省属企业 2027 差旅服务采购 · 二次公告', found:'11-20 14:35', city:'杭州',
+        snippet:'报名截止 12-10，要求具备酒店协议价资源与 7×24 预订服务能力'});
+      DB.channels[1].hit += 1; DB.channels[1].last = '11-20';
+      toast('采集完成：新增 1 条线索进待确认池');
+      S.leadSeg = 'pool';
+      S.screen = 'discover'; S.param = null;
+      render();
+    }, 1200);
+    return;
+  }
+  if (act === 'vtype'){ S.followType = el.dataset.v; render(); return; }
+  if (act === 'vnext'){ S.followNext = el.dataset.v; render(); return; }
+  if (act === 'newlevel'){ S.newLevel = el.dataset.level; render(); return; }
+  if (act === 'newtype'){ S.newType = el.dataset.v; render(); return; }
+  if (act === 'newstatus'){ S.newStatus = el.dataset.v; render(); return; }
+  if (act === 'newline'){
+    const l = el.dataset.v;
+    const cur = S.newLines || [];
+    S.newLines = cur.indexOf(l) >= 0 ? cur.filter(x => x !== l) : cur.concat([l]);
+    render(); return;
+  }
+  if (act === 'newtag'){
+    const t = el.dataset.tag;
+    if (S.newTags.indexOf(t) >= 0) S.newTags = S.newTags.filter(x => x !== t);
+    else S.newTags = S.newTags.concat([t]);
+    if (!S.newTags.length) S.newTags = [DB.tags[0]];
+    render(); return;
+  }
+
+  /* ---- 跟进记录：编辑 / 删除（PRD 12.8） ---- */
+  if (act === 'follow-more'){
+    S.actTarget = {cid: el.dataset.cid, i: Number(el.dataset.i)};
+    S.modal = 'followAct'; render(); return;
+  }
+  if (act === 'follow-edit'){
+    const t = S.actTarget || {};
+    S.editFollow = {cid: t.cid, idx: t.i};
+    S.modal = null; S.draft = {};
+    go('follow', t.cid);
+    return;
+  }
+  if (act === 'follow-del'){
+    const t = S.actTarget || {};
+    const arr = DB.follows[t.cid] || [];
+    if (arr[t.i]) arr[t.i].deleted = true;   /* 软删，保留占位 */
+    S.modal = null; render();
+    toast('已删除，时间轴保留占位');
+    return;
+  }
+
+  /* ---- 来源字典（PRD 11.2） ---- */
+  if (act === 'sources'){ S.modal = 'sources'; render(); return; }
+  if (act === 'src-del'){
+    if (DB.sources.length <= 1){ toast('至少保留一个来源'); return; }
+    DB.sources.splice(Number(el.dataset.i), 1);
+    render(); return;
+  }
+  if (act === 'src-add'){
+    const inp = $('#newSrc');
+    const v = inp ? inp.value.trim() : '';
+    if (!v){ toast('请输入来源名'); return; }
+    if (DB.sources.indexOf(v) >= 0){ toast('来源已存在'); return; }
+    DB.sources.push(v);
+    if (inp) inp.value = '';
+    render(); toast('已添加来源「' + v + '」'); return;
+  }
+
+  /* ---- 合作状态流转（PRD 8.4）：变更即写一条系统跟进 ---- */
+  if (act === 'status-open'){
+    S.statusTarget = el.dataset.id; S.modal = 'status'; render(); return;
+  }
+  if (act === 'pick-status'){
+    const c = comp(S.statusTarget);
+    const s = el.dataset.s;
+    if (c && c.status !== s){
+      const old = c.status;
+      c.status = s;
+      DB.follows[c.id] = DB.follows[c.id] || [];
+      DB.follows[c.id].unshift({date:'11-20', type:'系统', by:DB.me.name,
+        text:'合作状态由「' + old + '」变更为「' + s + '」', next:''});
+    }
+    S.modal = null; render();
+    toast('已变更为「' + s + '」，并写入时间轴');
+    return;
+  }
+
+  if (act === 'save-follow'){
+    const cid = S.followCompany || 'c1';
+    const ta = $('#f-text');
+    const text = ta ? ta.value.trim() : '';
+    if (!text){ toast('请填写跟进内容'); return; }
+    /* 编辑模式：只更新内容，不碰计划（避免改错字把手滑成重排） */
+    if (S.editFollow && S.editFollow.cid === cid){
+      const arr = DB.follows[cid] || [];
+      if (arr[S.editFollow.idx]){
+        arr[S.editFollow.idx].text = text;
+        arr[S.editFollow.idx].type = S.followType || arr[S.editFollow.idx].type;
+      }
+      S.editFollow = null; S.draft = {}; S.followType = '电话';
+      back(); S.ctab = '跟进'; render();
+      toast('已更新这条跟进，计划保持不变');
+      return;
+    }
+    DB.follows[cid] = DB.follows[cid] || [];
+    DB.follows[cid].unshift({date:'11-20', type:S.followType || '电话', by:DB.me.name,
+      text:text, next:S.followNext || '3 天后'});
+    const dmap = {'明天':'2026-11-21', '3 天后':'2026-11-23', '下周一':'2026-11-23'};
+    DB.plans[cid] = {date:dmap[S.followNext] || '2026-11-23',
+      note:(text || '跟进下次沟通').slice(0, 18), by:DB.me.name};
+    S.voice = null; S.photos = 0; S.followType = '电话'; S.draft = {};
+    back(); S.ctab = '跟进'; render();
+    toast('已保存，并写入该企业时间轴');
+    return;
+  }
+  if (act === 'advance'){
+    const d = dealOf(el.dataset.id);
+    if (d && d.stage < 4){
+      d.stage++;
+      toast(d.stage >= 4 ? '恭喜，已标记赢单' : '已推进到「' + ['接洽','试单','报价','签约','赢单'][d.stage] + '」');
+      render();
+    }
+    return;
+  }
+  if (act === 'lose'){ S.modal = 'lose'; render(); return; }
+  if (act === 'pick-lose'){
+    document.querySelectorAll('.opt button').forEach(b => b.classList.remove('on'));
+    el.classList.add('on'); S.loseReason = el.dataset.r; return;
+  }
+  if (act === 'close-modal'){ if (e.target === el){ S.modal = null; render(); } return; }
+  if (act === 'confirm-lose'){
+    const dd = DB.deals.find(x => x.id === S.param) || DB.deals[0];
+    dd.stage = 4; dd.lost = S.loseReason || '价格';
+    S.modal = null; render();
+    toast('已标记输单，原因：' + dd.lost);
+    return;
+  }
+  if (act === 'save-company'){
+    const name = ($('#n-name') && $('#n-name').value.trim()) || '';
+    if (!name){ toast('请填写企业名称'); return; }
+    const short = ($('#n-short') && $('#n-short').value.trim()) || name.slice(0,4);
+    const city = ($('#n-city') && $('#n-city').value.trim()) || '未填写';
+    const credit = ($('#n-credit') && $('#n-credit').value.trim()) || '待补充';
+    const desc = ($('#n-desc') && $('#n-desc').value.trim()) || '新建档案，待补充简介';
+    const industry = ($('#n-industry') && $('#n-industry').value.trim()) || '待补充';
+    const addr = ($('#n-addr') && $('#n-addr').value.trim()) || '待补充';
+    const web = ($('#n-web') && $('#n-web').value.trim()) || '待补充';
+    const tagOn = (S.newTags && S.newTags.length) ? S.newTags : [DB.tags[0]];
+    const id = 'n' + Date.now();
+    DB.companies.unshift({id:id, name:name, short:short, level:S.newLevel || '重点',
+      status:'潜在', city:city, owner:DB.me.name, industry:industry,
+      credit:credit, addr:addr, web:web,
+      tags:tagOn,
+      contacts:[], deals:[], attach:[], brief:desc});
+    DB.follows[id] = [];
+    S.newTags = [DB.tags[0]]; S.draft = {}; S.newLevel = '重点';
+    toast('已保存，查重通过（无同名企业）');
+    S.hist = [];
+    go('partners');
+    return;
+  }
+  /* 标签管理 */
+  if (act === 'tags'){ S.modal = 'tags'; render(); return; }
+  if (act === 'close-modal2'){ S.modal = null; render(); return; }
+  if (act === 'tag-del'){
+    if (DB.tags.length <= 1){ toast('至少保留一个标签'); return; }
+    DB.tags.splice(Number(el.dataset.i), 1);
+    render(); return;
+  }
+  if (act === 'tag-add'){
+    const inp = $('#newTag');
+    const v = inp ? inp.value.trim() : '';
+    if (!v){ toast('请输入标签名'); return; }
+    if (DB.tags.indexOf(v) >= 0){ toast('标签已存在'); return; }
+    DB.tags.push(v);
+    if (inp) inp.value = '';
+    render(); toast('已添加标签「' + v + '」'); return;
+  }
+  if (act === 'go-channels'){ S.modal = null; go('channels'); return; }
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t && t.id && (t.id === 'f-text' || t.id.indexOf('n-') === 0)) S.draft[t.id] = t.value;
+  if (t && t.id === 'plan-note' && S.planDraft) S.planDraft.note = t.value;
+  const map = {'ch-name':'name', 'ch-url':'url', 'ch-kw':'kw', 'ch-scope':'scope'};
+  if (t && t.id && map[t.id] && S.chDraft) S.chDraft[map[t.id]] = t.value;
+});
+
+document.addEventListener('change', e => {
+  const t = e.target;
+  /* 来源字典改名：同步已有发现记录 */
+  if (t && t.dataset && t.dataset.srcI !== undefined){
+    const i = Number(t.dataset.srcI), v = t.value.trim();
+    if (!v){ t.value = DB.sources[i]; return; }
+    if (DB.sources.indexOf(v) >= 0 && DB.sources.indexOf(v) !== i){ toast('来源名重复'); t.value = DB.sources[i]; return; }
+    const old = DB.sources[i];
+    DB.sources[i] = v;
+    DB.leads.forEach(l => { if (l.src === old) l.src = v; });
+    toast('已重命名为「' + v + '」');
+    return;
+  }
+  if (t && t.dataset && t.dataset.tagI !== undefined){
+    const i = Number(t.dataset.tagI), v = t.value.trim();
+    if (!v){ t.value = DB.tags[i]; return; }
+    if (DB.tags.indexOf(v) >= 0 && DB.tags.indexOf(v) !== i){ toast('标签名重复'); t.value = DB.tags[i]; return; }
+    const old = DB.tags[i];
+    DB.tags[i] = v;
+    DB.companies.forEach(c => {
+      const k = (c.tags || []).indexOf(old);
+      if (k >= 0) c.tags[k] = v;
+    });
+    if (S.filters.tag === old) S.filters.tag = v;
+    toast('已重命名为「' + v + '」');
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ S.modal = null; render(); }
+});
+
+/* ============================================================ 启动 */
+const startHash = (location.hash || '').replace('#','');
+if (startHash === 'tags'){                 /* 深链：#tags 标签管理弹层 */
+  go('partners'); S.modal = 'tags'; render();
+} else if (startHash === 'sources'){       /* 深链：#sources 来源字典弹层 */
+  go('mine'); S.modal = 'sources'; render();
+} else if (startHash === 'follow-edit'){   /* 深链：#follow-edit 跟进编辑态 */
+  go('follow', 'c1');
+  S.editFollow = {cid:'c1', idx:0}; render();
+} else if (startHash === 'search'){        /* 深链：#search 搜索展开态 */
+  go('partners'); S.searching = true; S.q = '中航'; render();
+} else if (startHash === 'channel-edit'){  /* 深链：#channel-edit 渠道编辑弹层 */
+  go('channels');
+  var c0 = DB.channels[0];
+  S.chEdit = c0.id;
+  S.chDraft = {name:c0.name, url:c0.url, kw:c0.kw, freq:c0.freq, scope:c0.scope};
+  S.modal = 'channel'; render();
+} else if (startHash === 'plan'){        /* 深链：#plan 跟进计划弹层 */
+  go('company', 'c1'); S.ctab = '跟进';
+  S.planTarget = 'c1'; S.planEdit = true;
+  S.planDraft = {date:'2026-11-25', note:'给 2027 年度框架续签报价（含华南区覆盖方案）'};
+  S.modal = 'plan'; render();
+} else if (startHash && SCREENS[startHash.split('/')[0]]){
+  const hp = startHash.split('/');
+  go(hp[0], hp[1] ? decodeURIComponent(hp[1]) : null);
+  if (hp[2]) { S.ctab = decodeURIComponent(hp[2]); render(); }
+} else {
+  go('partners');
+}
+window.addEventListener('hashchange', () => {
+  const h = (location.hash || '').replace('#','');
+  const hp = h.split('/');
+  if (hp[0] && SCREENS[hp[0]]){
+    go(hp[0], hp[1] ? decodeURIComponent(hp[1]) : null);
+    if (hp[2]) { S.ctab = decodeURIComponent(hp[2]); render(); }
+  }
+});
+</script>
+</body>
+</html>
