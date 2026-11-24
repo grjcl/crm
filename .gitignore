@@ -1,0 +1,26 @@
+# dsh-superagent 为每个工单创建的 worktree，不应进版本库
+db-baseline-migrations-*/
+agent/
+*-14d33b50*/
+
+# 构建产物
+node_modules/
+dist/
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# 环境与凭据
+.env
+.env.local
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 系统
+.DS_Store
+Thumbs.db
