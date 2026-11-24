@@ -70,20 +70,85 @@ PostgreSQL 16 / Redis 7
 
 ## 环境说明
 
-**当前执行容器内**：
+### 已就绪
+
+| 工具 | 版本 | 路径 / 说明 |
+|---|---|---|
+| Node.js | 24.22.3 | `node` |
+| npm | 11.19.1 | `npm` |
+| Java | **21.0.13.1** (Temurin) | `/home/dsh/.local/opt/jdk-21` |
+| psql | 16.16 | `psql` |
+| git | 2.39.5 | `git` |
+| gh | 2.105.0 | 走 `gh-agent` 包装器，已登录 |
+| lark-cli | 1.0.100 | 走 `lark-bot` 包装器，bot 身份 |
+
+### 关键：JAVA_HOME 必须显式设置
+
+```bash
+export JAVA_HOME=/home/dsh/.local/opt/jdk-21
+```
+
+**每个新 shell 都要重新 export** —— 环境变量不跨命令保留。所有涉及 Maven 的命令前面都要带上它。
+
+### Maven 用 Wrapper，不要装
+
+**不需要安装 Maven**。`crm-server/` 下应该有 `mvnw`，第一次执行会自动下载 Maven 到 `~/.m2/wrapper/`，之后复用缓存。
+
+```bash
+cd crm-server
+JAVA_HOME=/home/dsh/.local/opt/jdk-21 ./mvnw -q compile
+```
+
+如果仓库里还没有 `mvnw`，用这条命令生成（只需要 Java，不需要 Maven）：
+
+```bash
+# Spring Boot 脚手架自带；若手工建项目，从官方模板取 4 个文件：
+#   mvnw, mvnw.cmd, .mvn/wrapper/maven-wrapper.properties, .mvn/wrapper/maven-wrapper.jar
+```
+
+### 数据库
+
+**不要在本机起临时 PostgreSQL**，用这台已经跑着的实例：
 
 ```
-node 24.22.3  ✓
-npm  11.19.1  ✓
-git            ✓
-java           ✗  ← 后端任务无法自验编译
-mvn            ✗
+host: 192.168.1.53
+port: 5432
+user: root
+password: 123456
+database: crm        ← 已存在
 ```
 
-因此：
-- **前端任务**可以完整自验（`npm run build`）
-- **后端任务**只能写代码，编译需在装了 JDK+Maven 的环境验证
-- **纯 SQL 任务**（数据层 21 个）可只产出 `.sql` 文件，SQL 正确性需人工或 psql 验证
+连接串：
+
+```
+postgresql://root:123456@192.168.1.53:5432/crm
+```
+
+验证：
+
+```bash
+psql "postgresql://root:123456@192.168.1.53:5432/crm" -tAc "select version()"
+```
+
+**注意**：
+- 这是共享库，**不要 DROP DATABASE**
+- 建表前确认表不存在；如需重置用 `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`（先确认没有别人的数据）
+- 测试用的临时表请加前缀 `t_`，用完删除
+
+### 验证编译的完整命令
+
+```bash
+export JAVA_HOME=/home/dsh/.local/opt/jdk-21
+cd crm-server && ./mvnw -q -DskipTests package
+```
+
+### 前端
+
+```bash
+cd crm-app && npm install && npm run build
+```
+
+npm 已配置国内镜像（`registry.npmmirror.com`）。
 
 ## 提交规范
 
