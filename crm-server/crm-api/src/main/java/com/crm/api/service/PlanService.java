@@ -44,6 +44,14 @@ public class PlanService {
         return rows.get(0);
     }
 
+    // Phase one permits both authenticated roles to access every non-deleted partner.
+    // This preflight runs on every request, including idempotent replays.
+    public void requireAccessible(Long orgId) {
+        List<Long> orgs = jdbc.query("select id from org where id=? and deleted_at is null",
+                (rs, n) -> rs.getLong(1), orgId);
+        if (orgs.isEmpty()) throw missing();
+    }
+
     @Transactional
     public PlanDtos.Saved save(Long orgId, PlanDtos.Request body, HttpServletRequest request) {
         if (body == null || body.date() == null || body.note() == null || body.note().isEmpty()
