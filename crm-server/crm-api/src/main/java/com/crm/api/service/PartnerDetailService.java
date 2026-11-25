@@ -51,7 +51,7 @@ public class PartnerDetailService {
                 rs.getString("legal_person"), rs.getString("reg_capital"), rs.getObject("found_date", LocalDate.class),
                 rs.getString("industry"), rs.getString("city"), rs.getString("address"), rs.getString("website"),
                 rs.getString("brief"), rs.getString("type"), readJson(rs.getString("product_lines")),
-                rs.getString("level"), rs.getString("status"), rs.getString("settle_contact"), time(rs, "created_at"),
+                rs.getString("level"), rs.getString("status"), rs.getString("settlement_contact"), time(rs, "created_at"),
                 time(rs, "updated_at"), new User(rs.getLong("owner_id"), rs.getString("owner_name")),
                 strings(rs.getArray("tag_names")),
                 rs.getObject("invoice_id") == null ? null : new Invoice(rs.getString("invoice_title"), rs.getString("tax_no"),

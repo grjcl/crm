@@ -38,7 +38,7 @@ class PartnerDetailPostgresTest {
                 : DriverManager.getConnection(url, user, System.getenv("CRM_TEST_DATABASE_PASSWORD"));
         jdbc = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
         jdbc.execute("CREATE TEMP TABLE sys_user (id bigint PRIMARY KEY, name varchar(30))");
-        jdbc.execute("CREATE TEMP TABLE org (id bigint PRIMARY KEY, name varchar(100), short_name varchar(20), credit_code varchar(18), legal_person varchar(30), reg_capital varchar(30), found_date date, industry varchar(30), city varchar(20), address varchar(120), website varchar(80), brief varchar(200), type varchar(10), product_lines jsonb, level varchar(10), status varchar(10), owner_id bigint, collaborator_ids bigint[], created_by bigint, created_at timestamptz, updated_at timestamptz, deleted_at timestamptz)");
+        jdbc.execute("CREATE TEMP TABLE org (id bigint PRIMARY KEY, name varchar(100), short_name varchar(20), credit_code varchar(18), legal_person varchar(30), reg_capital varchar(30), found_date date, industry varchar(30), city varchar(20), address varchar(120), website varchar(80), brief varchar(200), type varchar(10), product_lines jsonb, level varchar(10), status varchar(10), settlement_contact varchar(20), owner_id bigint, collaborator_ids bigint[], created_by bigint, created_at timestamptz, updated_at timestamptz, deleted_at timestamptz)");
         jdbc.execute("CREATE TEMP TABLE org_tag (id bigint PRIMARY KEY, name varchar(10), sort int, enabled boolean)");
         jdbc.execute("CREATE TEMP TABLE org_tag_rel (org_id bigint, tag_id bigint)");
         jdbc.execute("CREATE TEMP TABLE org_invoice (id bigint, org_id bigint, title varchar(80), tax_no varchar(20), bank varchar(60), account varchar(30))");
@@ -93,6 +93,27 @@ class PartnerDetailPostgresTest {
                 .andExpect(jsonPath("$.data.metrics.monthFollows").value(0))
                 .andExpect(jsonPath("$.data.metrics.contacts").value(0))
                 .andExpect(jsonPath("$.data.metrics.nextPlanDate").value((Object) null));
+    }
+
+    @Test
+    void settlementContactComesFromMainRecordIndependentlyOfSupply() throws Exception {
+        jdbc.update("UPDATE org SET settlement_contact='主档联系人' WHERE id=1");
+        jdbc.update("INSERT INTO org_supply (id,org_id,supplier_type,coop_mode,settle_contact) VALUES (1,1,ARRAY['酒店集团'],ARRAY['协议价'],'供应联系人')");
+        mvc.perform(get("/api/v1/partners/1"))
+                .andExpect(jsonPath("$.data.settlementContact").value("主档联系人"))
+                .andExpect(jsonPath("$.data.supply").value((Object) null));
+        jdbc.update("INSERT INTO org_tag VALUES (1,'供应',1,true)");
+        jdbc.update("INSERT INTO org_tag_rel VALUES (1,1)");
+        mvc.perform(get("/api/v1/partners/1"))
+                .andExpect(jsonPath("$.data.settlementContact").value("主档联系人"))
+                .andExpect(jsonPath("$.data.supply.settleContact").value("供应联系人"));
+        jdbc.update("UPDATE org SET settlement_contact=NULL WHERE id=1");
+        mvc.perform(get("/api/v1/partners/1"))
+                .andExpect(jsonPath("$.data.settlementContact").value((Object) null))
+                .andExpect(jsonPath("$.data.supply.settleContact").value("供应联系人"));
+        mvc.perform(get("/api/v1/partners/2"))
+                .andExpect(jsonPath("$.data.settlementContact").value((Object) null))
+                .andExpect(jsonPath("$.data.supply").value((Object) null));
     }
 
     @Test
