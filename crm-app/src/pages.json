@@ -11,7 +11,10 @@
     {
       "path": "pages/partners/partners",
       "style": {
-        "navigationBarTitleText": "合作商"
+        "navigationBarTitleText": "合作商",
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true,
+        "onReachBottomDistance": 100
       }
     },
     {
