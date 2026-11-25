@@ -59,13 +59,16 @@ class PartnerCreatePostgresTest {
         DataSource ds = new AbstractDataSource() {
             @Override public Connection getConnection() throws SQLException {
                 Connection c = connect();
-                try (var s = c.createStatement()) { s.execute("SET search_path TO " + schema + ", public"); }
+                try (var s = c.createStatement()) { s.execute("SET search_path TO " + schema); }
                 catch (SQLException e) { c.close(); throw e; }
                 return c;
             }
             @Override public Connection getConnection(String u, String p) throws SQLException { throw new SQLException("unsupported"); }
         };
         jdbc = new JdbcTemplate(ds);
+        // Keep table lookup schema-local while exposing the shared pg_trgm function.
+        jdbc.execute("CREATE FUNCTION similarity(text, text) RETURNS real LANGUAGE sql IMMUTABLE STRICT "
+                + "AS 'SELECT public.similarity($1, $2)'");
         Path root = Path.of("").toAbsolutePath();
         while (root != null && !Files.exists(root.resolve("shared/db/V1__init.sql"))) root = root.getParent();
         if (root == null) throw new IllegalStateException("Cannot locate migrations");
@@ -78,6 +81,7 @@ class PartnerCreatePostgresTest {
         int indexStart = ddl.indexOf("CREATE UNIQUE INDEX uk_org_credit_code");
         jdbc.execute(ddl.substring(indexStart, ddl.indexOf(';', indexStart) + 1));
         jdbc.execute(Files.readString(root.resolve("shared/db/V4__idempotency_record.sql")));
+        jdbc.execute(Files.readString(root.resolve("shared/db/V5__org_settlement_contact.sql")));
         jdbc.update("INSERT INTO sys_user (id,name,phone,role,password_hash) VALUES (1,'销售','13800000001','SALES','x'),(2,'管理员','13800000002','ADMIN','x'),(3,'销售二','13800000003','SALES','x')");
         jdbc.update("INSERT INTO org_tag (id,name,enabled) VALUES (1,'分销',true),(2,'供应',true),(3,'停用',false)");
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
@@ -145,11 +149,41 @@ class PartnerCreatePostgresTest {
     }
 
     @Test
+    void invoiceDefaultTitleBoundaryAndBlankFields() throws Exception {
+        String name = "长".repeat(81);
+        create("{\"name\":\"" + name + "\",\"tags\":[\"分销\"],\"invoice\":{}}")
+                .andExpect(jsonPath("$.code").value(1001));
+        assertEquals(0, count("org"));
+        assertEquals(0, count("org_invoice"));
+        assertEquals(0, count("audit_log"));
+        create("{\"name\":\"" + name + "\",\"tags\":[\"分销\"],\"invoice\":{\"title\":\"有效抬头\",\"taxNo\":\"   \",\"account\":\"   \"}}")
+                .andExpect(jsonPath("$.code").value(0));
+        assertEquals("有效抬头", jdbc.queryForObject("SELECT title FROM org_invoice", String.class));
+        assertNull(jdbc.queryForObject("SELECT tax_no FROM org_invoice", String.class));
+        assertNull(jdbc.queryForObject("SELECT account FROM org_invoice", String.class));
+    }
+
+    @Test
+    void malformedSupplyIsIgnoredOnlyForNonSuppliers() throws Exception {
+        String[] malformed = {"{\"settleType\":\"未知\",\"creditDays\":-1}", "\"not an object\"", "{\"creditDays\":{\"bad\":true}}"};
+        for (int i = 0; i < malformed.length; i++) {
+            create("{\"name\":\"非供应企业" + i + "\",\"tags\":[\"分销\"],\"supply\":" + malformed[i] + "}")
+                    .andExpect(jsonPath("$.code").value(0));
+            create("{\"name\":\"供应企业验证" + i + "\",\"tags\":[\"供应\"],\"supply\":" + malformed[i] + "}")
+                    .andExpect(jsonPath("$.code").value(1001));
+        }
+        assertEquals(0, count("org_supply"));
+        assertEquals(3, count("org"));
+        assertEquals(3, count("audit_log"));
+    }
+
+    @Test
     void idempotencyReplaysAndRejectsDifferentPayload() throws Exception {
-        String body = "{\"name\":\"幂等测试企业\",\"tags\":[\"分销\"]}";
+        String body = "{\"name\":\"幂等测试企业\",\"tags\":[\"分销\"],\"settlementContact\":\"幂等联系人\"}";
         String first = create(body, "same-key").andExpect(jsonPath("$.code").value(0)).andReturn().getResponse().getContentAsString();
         String second = create(body, "same-key").andExpect(jsonPath("$.code").value(0)).andReturn().getResponse().getContentAsString();
         assertEquals(first, second);
+        assertEquals("幂等联系人", jdbc.queryForObject("SELECT settlement_contact FROM org", String.class));
         create("{\"name\":\"另一测试企业\",\"tags\":[\"分销\"]}", "same-key").andExpect(jsonPath("$.code").value(3001));
         assertEquals(1, count("org"));
         assertEquals(1, count("audit_log"));
@@ -167,14 +201,23 @@ class PartnerCreatePostgresTest {
     @Test
     void auditFailureRollsBackEverythingAndKeyCanBeRetried() throws Exception {
         jdbc.execute("ALTER TABLE audit_log ADD CONSTRAINT t_reject_audit CHECK (actor_id < 0)");
-        String body = "{\"name\":\"回滚测试企业\",\"tags\":[\"分销\"]}";
+        String body = "{\"name\":\"回滚测试企业\",\"tags\":[\"供应\"],\"settlementContact\":\"回滚联系人\",\"supply\":{\"settleContact\":\"供应联系人\"}}";
         create(body, "rollback-key").andExpect(status().isInternalServerError());
         assertEquals(0, count("org"));
         assertEquals(0, count("org_tag_rel"));
+        assertEquals(0, count("org_supply"));
         assertEquals(0, count("audit_log"));
         assertEquals(0, count("idempotency_record"));
         jdbc.execute("ALTER TABLE audit_log DROP CONSTRAINT t_reject_audit");
-        create(body, "rollback-key").andExpect(jsonPath("$.code").value(0));
+        String retried = create(body, "rollback-key").andExpect(jsonPath("$.code").value(0)).andReturn().getResponse().getContentAsString();
+        String replayed = create(body, "rollback-key").andExpect(jsonPath("$.code").value(0)).andReturn().getResponse().getContentAsString();
+        assertEquals(retried, replayed);
+        assertEquals("回滚联系人", jdbc.queryForObject("SELECT settlement_contact FROM org", String.class));
+        assertEquals("供应联系人", jdbc.queryForObject("SELECT settle_contact FROM org_supply", String.class));
+        assertEquals(1, count("org"));
+        assertEquals(1, count("org_supply"));
+        assertEquals(1, count("audit_log"));
+        assertEquals(1, count("idempotency_record"));
     }
 
     @Test
@@ -234,11 +277,28 @@ class PartnerCreatePostgresTest {
         assertEquals(1, count("audit_log"));
     }
 
-    @org.junit.jupiter.api.Disabled("Contract permits settlementContact, but the current schema has no corresponding top-level column")
     @Test
-    void topLevelSettlementContactIsAccepted() throws Exception {
-        create("{\"name\":\"结算联系人企业\",\"tags\":[\"分销\"],\"settlementContact\":\"张三\"}")
+    void topLevelSettlementContactIsStoredForSupplierAndNonSupplier() throws Exception {
+        create("{\"name\":\"分销联系人企业\",\"tags\":[\"分销\"],\"settlementContact\":\"张三\"}")
                 .andExpect(jsonPath("$.code").value(0));
+        create("{\"name\":\"供应联系人企业\",\"tags\":[\"供应\"],\"settlementContact\":\"李四\",\"supply\":{\"settleContact\":\"王五\"}}")
+                .andExpect(jsonPath("$.code").value(0));
+        assertEquals("张三", jdbc.queryForObject("SELECT settlement_contact FROM org WHERE name=?", String.class, "分销联系人企业"));
+        assertEquals("李四", jdbc.queryForObject("SELECT settlement_contact FROM org WHERE name=?", String.class, "供应联系人企业"));
+        assertEquals("王五", jdbc.queryForObject("SELECT settle_contact FROM org_supply", String.class));
+        assertEquals(1, count("org_supply"));
+    }
+
+    @Test
+    void settlementContactLengthBoundary() throws Exception {
+        String max = "张".repeat(20);
+        create("{\"name\":\"长度边界企业\",\"tags\":[\"分销\"],\"settlementContact\":\"" + max + "\"}")
+                .andExpect(jsonPath("$.code").value(0));
+        assertEquals(max, jdbc.queryForObject("SELECT settlement_contact FROM org", String.class));
+        create("{\"name\":\"长度超限企业\",\"tags\":[\"供应\"],\"settlementContact\":\"" + max + "张\"}")
+                .andExpect(jsonPath("$.code").value(1001));
+        assertEquals(1, count("org"));
+        assertEquals(1, count("audit_log"));
     }
 
     @Test
