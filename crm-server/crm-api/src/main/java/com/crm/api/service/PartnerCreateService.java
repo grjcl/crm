@@ -11,12 +11,15 @@ import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PartnerCreateService {
+    private static final Logger log = LoggerFactory.getLogger(PartnerCreateService.class);
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
     private final PartnerDedupService dedup;
@@ -31,7 +34,6 @@ public class PartnerCreateService {
         max(b.shortName(),20,"shortName"); max(b.legalPerson(),30,"legalPerson"); max(b.regCapital(),30,"regCapital");
         max(b.industry(),30,"industry"); max(b.city(),20,"city"); max(b.address(),120,"address");
         max(b.website(),80,"website"); max(b.brief(),200,"brief"); max(b.settlementContact(),20,"settlementContact");
-        if (!blank(b.settlementContact())) invalid("settlementContact 暂不支持：数据模型缺少字段");
         String credit = blank(b.creditCode()) ? null : b.creditCode();
         if (credit != null && !credit.matches("[0-9A-HJ-NPQRTUWXY]{2}\\d{6}[0-9A-HJ-NPQRTUWXY]{10}")) invalid("creditCode");
         LocalDate found = null;
@@ -55,12 +57,20 @@ public class PartnerCreateService {
             supply |= "供应".equals(rows.get(0).get("name"));
         }
         var invoice = b.invoice();
+        String invoiceTitle = invoice == null ? null : blank(invoice.title()) ? b.name() : invoice.title();
+        String invoiceTaxNo = invoice == null || blank(invoice.taxNo()) ? null : invoice.taxNo();
+        String invoiceAccount = invoice == null || blank(invoice.account()) ? null : invoice.account();
         if (invoice != null) {
-            max(invoice.title(),80,"invoice.title"); max(invoice.bank(),60,"invoice.bank");
+            if (length(invoiceTitle) > 80) throw new BizException(ErrorCode.PARAM_INVALID, "invoice.title 超过 80 字，请提供较短的开票抬头");
+            max(invoice.bank(),60,"invoice.bank");
             if (!blank(invoice.taxNo()) && (length(invoice.taxNo()) < 15 || length(invoice.taxNo()) > 20)) invalid("invoice.taxNo");
             if (!blank(invoice.account()) && !invoice.account().matches("[0-9]{1,30}")) invalid("invoice.account");
         }
-        var s = supply ? b.supply() : null;
+        PartnerCreateDtos.Supply s = null;
+        if (supply && b.supply() != null && !b.supply().isNull()) {
+            try { s = json.treeToValue(b.supply(), PartnerCreateDtos.Supply.class); }
+            catch (JsonProcessingException | IllegalArgumentException e) { invalid("supply"); }
+        }
         LocalDate start = null;
         if (s != null) {
             values(s.supplierType(), Set.of("酒店集团","单体酒店","TMC","批发商","同业"),"supply.supplierType");
@@ -93,17 +103,18 @@ public class PartnerCreateService {
             return false;
         });
         if (Boolean.TRUE.equals(sameName)) throw new BizException(ErrorCode.DUPLICATE);
+        if (match.hit() && "NAME_LIKE".equals(match.type())) log.warn("Partner creation has a similar existing name");
         String shortName = blank(b.shortName()) ? b.name().substring(0,b.name().offsetByCodePoints(0,Math.min(4,length(b.name())))) : b.shortName();
         List<Long> inserted = jdbc.query("""
-                insert into org(name,short_name,credit_code,legal_person,reg_capital,found_date,industry,city,address,website,brief,type,product_lines,level,status,owner_id,collaborator_ids,created_by)
-                values (?,?,?,?,?,?,?,?,?,?,?,?,?::jsonb,?,?,?,?::bigint[],?)
+                insert into org(name,short_name,credit_code,legal_person,reg_capital,found_date,industry,city,address,website,brief,type,product_lines,level,status,owner_id,collaborator_ids,created_by,settlement_contact)
+                values (?,?,?,?,?,?,?,?,?,?,?,?,?::jsonb,?,?,?,?::bigint[],?,?)
                 on conflict (credit_code) where credit_code is not null and deleted_at is null do nothing returning id
-                """, (rs, n) -> rs.getLong(1), b.name(),shortName,credit,b.legalPerson(),b.regCapital(),found,b.industry(),b.city(),b.address(),b.website(),b.brief(),type,serialize(lines),level,status,owner,pgArray(collaborators),user.userId());
+                """, (rs, n) -> rs.getLong(1), b.name(),shortName,credit,b.legalPerson(),b.regCapital(),found,b.industry(),b.city(),b.address(),b.website(),b.brief(),type,serialize(lines),level,status,owner,pgArray(collaborators),user.userId(),b.settlementContact());
         if (inserted.isEmpty()) throw new BizException(ErrorCode.DUPLICATE);
         Long id = inserted.get(0);
         for (Long tag : tagIds) jdbc.update("insert into org_tag_rel(org_id,tag_id) values (?,?)",id,tag);
         if (invoice != null) jdbc.update("insert into org_invoice(org_id,title,tax_no,bank,account) values (?,?,?,?,?)",id,
-                blank(invoice.title()) ? b.name() : invoice.title(),invoice.taxNo(),invoice.bank(),invoice.account());
+                invoiceTitle,invoiceTaxNo,invoice.bank(),invoiceAccount);
         if (s != null) jdbc.update("""
                 insert into org_supply(org_id,supplier_type,cities,hotels,room_type,peak_guarantee,coop_mode,coop_start,settle_type,credit_days,settle_contact,access_status,reject_reason)
                 values (?,?::text[],?,?,?,?,?::text[],?,?,?,?,?,?)
@@ -114,9 +125,10 @@ public class PartnerCreateService {
         after.put("level", level); after.put("status", status); after.put("productLines", lines);
         after.put("ownerId", owner); after.put("collaboratorIds", collaborators); after.put("tags", tagIds);
         after.put("supply", s);
-        if (invoice != null && blank(invoice.title())) {
+        if (invoice != null) {
             Map<String,Object> savedInvoice = new LinkedHashMap<>(json.convertValue(invoice, new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>() { }));
-            savedInvoice.put("title", b.name()); after.put("invoice", savedInvoice);
+            savedInvoice.put("title", invoiceTitle); savedInvoice.put("taxNo", invoiceTaxNo);
+            savedInvoice.put("account", invoiceAccount); after.put("invoice", savedInvoice);
         }
         diff.put("after", after);
         diff.put("overridden", !admin && (b.ownerId()!=null && !b.ownerId().equals(owner) || b.collaboratorIds()!=null && !b.collaboratorIds().isEmpty()));

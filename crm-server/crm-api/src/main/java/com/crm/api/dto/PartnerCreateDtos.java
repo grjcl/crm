@@ -1,5 +1,6 @@
 package com.crm.api.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 
 public final class PartnerCreateDtos {
@@ -8,7 +9,7 @@ public final class PartnerCreateDtos {
             String regCapital, String foundDate, String industry, String city, String address,
             String website, String brief, String type, List<String> productLines, String level,
             String status, Long ownerId, List<Long> collaboratorIds, String settlementContact,
-            List<Object> tags, Invoice invoice, Supply supply) { }
+            List<Object> tags, Invoice invoice, JsonNode supply) { }
     public record Invoice(String title, String taxNo, String bank, String account) { }
     public record Supply(List<String> supplierType, Integer cities, Integer hotels, String roomType,
             String peakGuarantee, List<String> coopMode, String coopStart, String settleType,
