@@ -204,6 +204,7 @@ class PlanPostgresTest {
 
     @Test
     void concurrentSameVersionHasOneWinnerAndOneAudit() throws Exception {
+        save(7, "2020-01-01", "initial", 0).andExpect(jsonPath("$.code").value(0));
         var ready = new CountDownLatch(2);
         var start = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(2)) {
@@ -217,7 +218,7 @@ class PlanPostgresTest {
                         ready.countDown();
                         if (!start.await(10, TimeUnit.SECONDS)) throw new AssertionError("start timeout");
                         try {
-                            service.save(7L, new PlanDtos.Request(LocalDate.of(2020, 1, 1), "write" + index, 0), new MockHttpServletRequest());
+                            service.save(7L, new PlanDtos.Request(LocalDate.of(2020, 1, 1), "write" + index, 1), new MockHttpServletRequest());
                             return 0;
                         } catch (BizException e) { return e.getCode(); }
                     } finally { AuthContext.clear(); }
@@ -232,7 +233,8 @@ class PlanPostgresTest {
             } finally { start.countDown(); }
         }
         assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM follow_plan", Integer.class));
-        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM audit_log", Integer.class));
+        assertEquals(2, jdbc.queryForObject("SELECT count(*) FROM audit_log", Integer.class));
+        assertEquals(2, jdbc.queryForObject("SELECT version FROM follow_plan WHERE org_id=7", Integer.class));
     }
 
     private ResultActions save(int id, String date, String note, int version) throws Exception {
