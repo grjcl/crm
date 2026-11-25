@@ -1,66 +1,179 @@
 package com.crm.api.idempotency;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.sql.DataSource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.AbstractDataSource;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
+/** Real PostgreSQL tests. Set IDEMPOTENCY_TEST_JDBC_URL, IDEMPOTENCY_TEST_DB_USER and
+ * IDEMPOTENCY_TEST_DB_PASSWORD to a maintenance database where the user may create databases. */
 class IdempotencyServiceTest {
-    private final StringRedisTemplate redis = mock(StringRedisTemplate.class);
-    @SuppressWarnings("unchecked")
-    private final ValueOperations<String, String> values = mock(ValueOperations.class);
-    private final ObjectMapper mapper = new ObjectMapper();
-    private final IdempotencyService service = new IdempotencyService(redis, mapper);
-    private final byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] BODY = "{\"name\":\"hotel\"}".getBytes(StandardCharsets.UTF_8);
+    private String database;
+    private boolean databaseCreated;
+    private String url;
+    private String testUrl;
+    private String user;
+    private String password;
+    private JdbcTemplate jdbc;
+    private IdempotencyService service;
 
-    @BeforeEach void setup() { when(redis.opsForValue()).thenReturn(values); }
-
-    @Test void firstExecutionPublishesFor24Hours() {
-        when(values.setIfAbsent(anyString(), anyString())).thenReturn(true);
-        when(redis.execute(any(RedisScript.class), anyList(), any(), any(), any())).thenReturn(1L);
-        var result = service.execute(1, "key", "POST", "/path", body,
-                () -> new IdempotencyService.Response(201, "application/json", body));
-        assertEquals(201, result.status());
-        verify(redis).execute(any(RedisScript.class), anyList(), any(), any(), eq("86400"));
+    @BeforeEach void setup() throws Exception {
+        url = System.getenv("IDEMPOTENCY_TEST_JDBC_URL");
+        user = System.getenv("IDEMPOTENCY_TEST_DB_USER");
+        password = System.getenv("IDEMPOTENCY_TEST_DB_PASSWORD");
+        assumeTrue(url != null && user != null && password != null, "PostgreSQL integration test not configured");
+        database = "t_idempotency_" + UUID.randomUUID().toString().replace("-", "");
+        int slash = url.lastIndexOf('/');
+        if (!url.startsWith("jdbc:postgresql://") || slash < "jdbc:postgresql://".length() || url.indexOf('?') >= 0) {
+            throw new IllegalArgumentException("Use a simple JDBC PostgreSQL URL without query parameters");
+        }
+        testUrl = url.substring(0, slash + 1) + database;
+        try (Connection c = DriverManager.getConnection(url, user, password); var s = c.createStatement()) {
+            s.execute("CREATE DATABASE " + database);
+            databaseCreated = true;
+        }
+        DataSource ds = new AbstractDataSource() {
+            @Override public Connection getConnection() throws SQLException {
+                return DriverManager.getConnection(testUrl, user, password);
+            }
+            @Override public Connection getConnection(String username, String pwd) throws SQLException {
+                throw new SQLException("Explicit credentials not supported");
+            }
+        };
+        jdbc = new JdbcTemplate(ds);
+        java.nio.file.Path root = java.nio.file.Path.of("").toAbsolutePath();
+        while (root != null && !java.nio.file.Files.exists(root.resolve("shared/db/V4__idempotency_record.sql"))) root = root.getParent();
+        if (root == null) throw new IllegalStateException("Cannot locate idempotency migration");
+        jdbc.execute(java.nio.file.Files.readString(root.resolve("shared/db/V4__idempotency_record.sql")));
+        jdbc.execute("CREATE TABLE t_business (id integer PRIMARY KEY)");
+        service = new IdempotencyService(jdbc, new DataSourceTransactionManager(ds));
     }
 
-    @Test void replayDoesNotRunBusiness() throws Exception {
-        when(values.setIfAbsent(anyString(), anyString())).thenReturn(false);
-        // Capture a real fingerprint by observing an initial claim.
-        when(values.setIfAbsent(anyString(), anyString())).thenAnswer(inv -> {
-            String claim = inv.getArgument(1);
-            String fingerprint = claim.split(":")[1];
-            when(values.get(anyString())).thenReturn(mapper.writeValueAsString(
-                    new IdempotencyService.Stored(fingerprint, new IdempotencyService.Response(202, "text/plain", body))));
-            return false;
-        });
-        AtomicInteger calls = new AtomicInteger();
-        var response = service.execute(1, "key", "POST", "/path", body, () -> { calls.incrementAndGet(); return null; });
-        assertEquals(0, calls.get());
-        assertEquals(202, response.status());
-        assertArrayEquals(body, response.body());
+    @AfterEach void cleanup() throws Exception {
+        if (databaseCreated) {
+            if (!database.matches("t_idempotency_[0-9a-f]{32}")) throw new IllegalStateException("Invalid test database name");
+            try (Connection c = DriverManager.getConnection(url, user, password); var s = c.createStatement()) {
+                s.execute("DROP DATABASE " + database);
+            }
+        }
     }
 
-    @Test void failuresAreConservative() {
+    private IdempotencyService.Response invoke(String key, String target, byte[] body,
+                                               java.util.function.Supplier<IdempotencyService.Response> operation) {
+        return service.execute(1, key, "POST", target, body, operation);
+    }
+    private IdempotencyService.Response write(int id) {
+        jdbc.update("INSERT INTO t_business VALUES (?)", id);
+        return new IdempotencyService.Response(201, "application/json", BODY);
+    }
+    private int count() { return jdbc.queryForObject("SELECT count(*) FROM t_business", Integer.class); }
+    private void assertResponse(IdempotencyService.Response response) {
+        assertEquals(201, response.status());
+        assertEquals("application/json", response.contentType());
+        assertArrayEquals(BODY, response.body());
+    }
+
+    @Test void firstAndReplayPreserveResponseAndRunOnce() {
+        assertResponse(invoke("key", "/hotels?x=1", BODY, () -> write(1)));
+        assertResponse(invoke("key", "/hotels?x=1", BODY, () -> fail("replay executed")));
+        assertEquals(1, count());
+        assertTrue(Boolean.TRUE.equals(jdbc.queryForObject("SELECT expires_at > clock_timestamp() + interval '23 hours 59 minutes' AND expires_at <= clock_timestamp() + interval '24 hours' FROM idempotency_record", Boolean.class)));
+    }
+
+    @Test void userAndOperationScopeAndInvalidKey() {
         assertEquals(IdempotencyService.Reason.INVALID_KEY, assertThrows(IdempotencyService.Rejected.class,
-                () -> service.execute(1, " ", "POST", "/", body, () -> null)).reason());
-        when(values.setIfAbsent(anyString(), anyString())).thenThrow(new IllegalStateException());
-        assertEquals(IdempotencyService.Reason.STORE_UNAVAILABLE, assertThrows(IdempotencyService.Rejected.class,
-                () -> service.execute(1, "key", "POST", "/", body, () -> fail())).reason());
-        doReturn(true).when(values).setIfAbsent(anyString(), anyString());
-        assertThrows(IllegalStateException.class,
-                () -> service.execute(1, "key", "POST", "/", body, () -> { throw new IllegalStateException(); }));
-        verify(values, never()).get(anyString());
-        verify(redis, never()).delete(anyString());
+                () -> invoke(" ", "/hotels", BODY, () -> fail("invalid key executed"))).reason());
+        invoke("key", "/hotels", BODY, () -> write(1));
+        service.execute(2, "key", "POST", "/hotels", BODY, () -> write(2));
+        invoke("key", "/other", BODY, () -> write(3));
+        service.execute(1, "key", "PUT", "/hotels", BODY, () -> write(4));
+        assertEquals(4, count());
+    }
+
+    @Test void changedBodyOrQueryConflictsWithoutRunningBusiness() {
+        invoke("key", "/hotels?x=1", BODY, () -> write(1));
+        for (var target : new String[] {"/hotels?x=1", "/hotels?x=2"}) {
+            byte[] body = target.endsWith("1") ? new byte[] {1} : BODY;
+            var error = assertThrows(IdempotencyService.Rejected.class,
+                    () -> invoke("key", target, body, () -> fail("conflicting request executed")));
+            assertEquals(IdempotencyService.Reason.CONFLICT, error.reason());
+        }
+        assertEquals(1, count());
+    }
+
+    @Test void rollbackDiscardsBothBusinessWriteAndClaim() {
+        assertThrows(IllegalStateException.class, () -> invoke("key", "/hotels", BODY, () -> {
+            write(1);
+            throw new IllegalStateException("failed before commit");
+        }));
+        assertEquals(0, count());
+        assertResponse(invoke("key", "/hotels", BODY, () -> write(1)));
+        assertEquals(1, count());
+    }
+
+    @Test void retryAfterCommittedResponseWasLostReplays() {
+        invoke("key", "/hotels", BODY, () -> write(1)); // caller loses the response after commit
+        assertResponse(invoke("key", "/hotels", BODY, () -> fail("retry executed")));
+        assertEquals(1, count());
+    }
+
+    @Test void expiredRecordCanBeReused() {
+        invoke("key", "/hotels", BODY, () -> write(1));
+        jdbc.update("UPDATE idempotency_record SET expires_at = clock_timestamp() - interval '1 second'");
+        assertResponse(invoke("key", "/hotels", BODY, () -> write(2)));
+        assertEquals(2, count());
+    }
+
+    @Test void concurrentRequestsExecuteOnlyOnce() throws Exception {
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var calls = new AtomicInteger();
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> invoke("key", "/hotels", BODY, () -> {
+                calls.incrementAndGet();
+                var response = write(1);
+                entered.countDown();
+                try { if (!release.await(10, TimeUnit.SECONDS)) throw new AssertionError("timed out"); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new AssertionError(e); }
+                return response;
+            }));
+            try {
+                assertTrue(entered.await(10, TimeUnit.SECONDS));
+                var second = executor.submit(() -> invoke("key", "/hotels", BODY, () -> {
+                    calls.incrementAndGet(); return write(2);
+                }));
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+                boolean waiting = false;
+                while (System.nanoTime() < deadline && !waiting) {
+                    waiting = Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM pg_stat_activity "
+                            + "WHERE datname = current_database() AND wait_event_type = 'Lock' "
+                            + "AND query LIKE 'INSERT INTO idempotency_record%')", Boolean.class));
+                    if (!waiting) Thread.sleep(20);
+                }
+                assertTrue(waiting, "second request did not reach the competing database lock");
+                release.countDown();
+                assertResponse(first.get(15, TimeUnit.SECONDS));
+                assertResponse(second.get(15, TimeUnit.SECONDS));
+                assertEquals(1, calls.get());
+                assertEquals(1, count());
+            } finally { release.countDown(); }
+        }
     }
 }
