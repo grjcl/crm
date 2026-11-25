@@ -97,6 +97,28 @@ class IdempotencyServiceTest {
         assertTrue(Boolean.TRUE.equals(jdbc.queryForObject("SELECT expires_at > clock_timestamp() + interval '23 hours 59 minutes' AND expires_at <= clock_timestamp() + interval '24 hours' FROM idempotency_record", Boolean.class)));
     }
 
+    @Test void responseHeadersPersistAcrossReplayIncludingNulls() {
+        byte[] body = "created".getBytes(StandardCharsets.UTF_8);
+        var original = invoke("headers", "/hotels", BODY, () -> {
+            write(1);
+            return new IdempotencyService.Response(201, "text/plain; charset=UTF-8", body,
+                    "/api/v1/hotels/1?view=full", "W/\"version-1\"");
+        });
+        var replay = invoke("headers", "/hotels", BODY, () -> fail("replay executed"));
+        for (var response : new IdempotencyService.Response[] {original, replay}) {
+            assertEquals(201, response.status());
+            assertEquals("text/plain; charset=UTF-8", response.contentType());
+            assertArrayEquals(body, response.body());
+            assertEquals("/api/v1/hotels/1?view=full", response.location());
+            assertEquals("W/\"version-1\"", response.etag());
+        }
+        invoke("no-headers", "/hotels", BODY, () -> write(2));
+        var withoutHeaders = invoke("no-headers", "/hotels", BODY, () -> fail("replay executed"));
+        assertNull(withoutHeaders.location());
+        assertNull(withoutHeaders.etag());
+        assertEquals(2, count());
+    }
+
     @Test void userAndOperationScopeAndInvalidKey() {
         assertEquals(IdempotencyService.Reason.INVALID_KEY, assertThrows(IdempotencyService.Rejected.class,
                 () -> invoke(" ", "/hotels", BODY, () -> fail("invalid key executed"))).reason());
@@ -105,6 +127,31 @@ class IdempotencyServiceTest {
         invoke("key", "/other", BODY, () -> write(3));
         service.execute(1, "key", "PUT", "/hotels", BODY, () -> write(4));
         assertEquals(4, count());
+    }
+
+    @Test void sameKeyAcrossUsersAndDifferentKeysKeepIndependentResponses() {
+        byte[] firstBody = "first user".getBytes(StandardCharsets.UTF_8);
+        byte[] secondBody = "second user".getBytes(StandardCharsets.UTF_8);
+        byte[] thirdBody = "different key".getBytes(StandardCharsets.UTF_8);
+        service.execute(1, "key", "POST", "/hotels", BODY, () -> {
+            write(1); return new IdempotencyService.Response(201, "text/plain", firstBody);
+        });
+        service.execute(2, "key", "POST", "/hotels", BODY, () -> {
+            write(2); return new IdempotencyService.Response(202, "text/plain", secondBody);
+        });
+        service.execute(1, "other-key", "POST", "/hotels", BODY, () -> {
+            write(3); return new IdempotencyService.Response(203, "text/plain", thirdBody);
+        });
+        var first = service.execute(1, "key", "POST", "/hotels", BODY, () -> fail("replay executed"));
+        var second = service.execute(2, "key", "POST", "/hotels", BODY, () -> fail("replay executed"));
+        var third = service.execute(1, "other-key", "POST", "/hotels", BODY, () -> fail("replay executed"));
+        assertEquals(201, first.status());
+        assertArrayEquals(firstBody, first.body());
+        assertEquals(202, second.status());
+        assertArrayEquals(secondBody, second.body());
+        assertEquals(203, third.status());
+        assertArrayEquals(thirdBody, third.body());
+        assertEquals(3, count());
     }
 
     @Test void changedBodyOrQueryConflictsWithoutRunningBusiness() {
@@ -116,6 +163,18 @@ class IdempotencyServiceTest {
             assertEquals(IdempotencyService.Reason.CONFLICT, error.reason());
         }
         assertEquals(1, count());
+    }
+
+    @Test void conflictDoesNotAffectOtherUsersOrKeys() {
+        invoke("key", "/hotels?x=1", BODY, () -> write(1));
+        byte[] changedBody = "changed".getBytes(StandardCharsets.UTF_8);
+        var rejection = assertThrows(IdempotencyService.Rejected.class,
+                () -> invoke("key", "/hotels?x=1", changedBody, () -> fail("conflict executed")));
+        assertEquals(IdempotencyService.Reason.CONFLICT, rejection.reason());
+        service.execute(2, "key", "POST", "/hotels?x=1", changedBody, () -> write(2));
+        invoke("other-key", "/hotels?x=1", changedBody, () -> write(3));
+        assertResponse(invoke("key", "/hotels?x=1", BODY, () -> fail("original replay executed")));
+        assertEquals(3, count());
     }
 
     @Test void rollbackDiscardsBothBusinessWriteAndClaim() {
